@@ -1,0 +1,70 @@
+
+# [Observatory Position]
+name: "Stone Edge Observatory"
+# In decimal degrees
+latitude: 38.28869
+longitude:  -122.504
+# In meters
+elevation: 2215.0
+
+#[constraints]
+airmass_limit: 2.0
+max_sun_alt: 14.0
+min_moon_angle: 20.0
+min_telescope_alt: 20.0
+
+#[slew]
+default_transition_time: 0
+slew_expr: 1.7
+
+# [bands]
+wavelengths: {'u': 380.0, 'g': 475.0, 'r': 635.0, 'i': 775.0, 'z': 925.0, 'Y': 1000.0}
+
+# [optics]
+fwhm: 0.45
+
+# weather
+seeing: 0.9
+cloud_extinction: 0.0
+
+# camera
+shutter_seconds: 0.0
+readout_seconds: 27.0
+
+location : {'n_sites': 10}
+
+# skybright options
+use_skybright: False 
+
+skybright: 
+# atmospheric extinction
+  - k: [0.440000,  0.190000,  0.110000,  0.080000,  0.100000,  0.080000]
+
+# mag*asec^-2 of "sky" at infinity
+  - m_inf: [30.000000, 30.000000, 30.000000, 30.000000 ,30.000000 ,30.000000]
+
+# mag*asec^-2 of airglow at zenith
+  - m_zen:  [22.888140, 22.299324, 21.464182, 20.258869 ,19.103155, 18.247514]
+
+# height of the airglow layer (km)
+  - h: [90.000000, 90.000000, 90.000000, 90.000000, 90.000000 ,90.000000]
+
+# mean mag*asec-2 (over all scattering angles) of Rayleigh scattering of
+# moonlight in the atmosphere, if the moon were full.
+  - rayl_m: [19.308645 ,19.100731 ,19.883032 ,20.532986, 21.841190, 23.046128]
+
+# asymmetry parameter (0 to 1) in the Cornette & Shanks (1992) approximation
+# of the Mie scattering function
+  - g:  [0.999065 , 0.733932  ,0.765837 , 0.573259 , 0.472586  ,0.777057]
+
+# mean mag*asec-2 (over all scattering angles) of Mie scattering of
+# moonlight in the atmosphere, if the moon were full.
+  - mie_m: [13.548993, 19.685764 ,19.388888, 19.720487, 20.138921, 19.999552]
+
+# Difference in apparent magnitude between the sun an full moon
+  - sun_dm: [-14.00000 ,-13.538353 ,-12.927899, -13.425612, -13.635937, -14.686537]
+
+# Parameters in a polynomial fit to the decline in sky magnitude during twilight
+  - twi1: [0.067877 ,-0.335168, -0.962052 ,-0.786719, -2.053557 ,-3.216514]
+  - twi2: [-0.002353 ,-0.000334 , 0.002976 , 0.002104 , 0.008696,  0.014725]
+
