@@ -1,8 +1,8 @@
 import cleo
 
-from telescope_positioning_simulation.survey import Survey
-from telescope_positioning_simulation.read_config import ReadConfig
-from telescope_positioning_simulation.save_simulation import SaveSimulation
+from telescope_positioning_simulation.Survey.survey import Survey
+from telescope_positioning_simulation.IO.read_config import ReadConfig
+from telescope_positioning_simulation.IO.save_simulation import SaveSimulation
 
 # Ask for observatory config 
 # Ask for survey config 
