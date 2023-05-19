@@ -16,6 +16,9 @@ class Survey:
             observator_configuration=obseravtory_config
         )
 
+        self.telescope_config = obseravtory_config
+        self.survey_config = survey_config
+
         self.reward_config = survey_config["reward"]
         self.stop_config = survey_config["stopping"]
         self.validity_config = survey_config["constaints"]
@@ -132,7 +135,9 @@ class Survey:
                 obs_var: np.array(observation[obs_var], dtype=np.float32)
                 for obs_var in observation
             }
-            results[self.observator.time.mjd]["reward"] = reward
+            results[self.observator.time.mjd]["reward"] = np.array(
+                reward, dtype=np.float32
+            )
 
             # TODO checkpoint functionality
 

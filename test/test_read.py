@@ -27,7 +27,7 @@ def test_read_survey_default_config():
 
 def test_read_empty_config():
     empty_config = {}
-    test_path = "test_files/empty_config.yaml"
+    test_path = "test/test_files/empty_config.yaml"
     with open(test_path, "w") as f:
         yaml.safe_dump(empty_config, f)
 
@@ -48,7 +48,7 @@ def test_read_half_filled_config():
         "cloud_extinction": 1.0,
     }
 
-    test_path = "test_files/test_config.yaml"
+    test_path = "test/test_files/test_config.yaml"
     with open(test_path, "w") as f:
         yaml.safe_dump(half_filled_config, f)
 
@@ -60,7 +60,7 @@ def test_read_half_filled_config():
 
     assert read_config["location"] == half_filled_config["location"]
     assert read_config["seeing"] == half_filled_config["seeing"]
-    assert read_config["seeing"] == half_filled_config["seeing"]
+    assert read_config["cloud_extinction"] == half_filled_config["cloud_extinction"]
 
     for key in [
         key for key in read_config.keys() if key not in half_filled_config.keys()
