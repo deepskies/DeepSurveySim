@@ -4,16 +4,16 @@ timestep_size: 300
 # Random Start time
 start_time: "random"
 
-# How much the reward is for an invalid action 
+# How much the reward is for an invalid action
 invalid_penality: -100
 
 # What is used to decide reward
 reward: {"monitor": "airmass", "min": True, "threshold": 20}
 
-# Constraints to decide what an invalid action is 
+# Constraints to decide what an invalid action is
 constaints: {"airmass": {"value": 2.0, "lesser": False},"alt": {"value": 20.0, "lesser": True},}
 
-# The stopping condition (s) 
+# The stopping condition (s)
 stopping: {"timestep": 400}
 
-save_path: "./equatorial_survey/"
+save: "./equatorial_survey/"

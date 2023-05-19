@@ -5,20 +5,17 @@ Run a simulation, picking up the variables specified in the config file and upda
 from typing import Any, Union
 import numpy as np
 
-from telescope_positioning_simulation.Survey.observation_variables import ObservationVariables
+from telescope_positioning_simulation.Survey.observation_variables import (
+    ObservationVariables,
+)
 
 
 class Survey:
-    def __init__(
-        self, survey_config: dict, obseravtory_config: dict
-    ) -> None:
-
+    def __init__(self, survey_config: dict, obseravtory_config: dict) -> None:
         self.observator = ObservationVariables(
             observator_configuration=obseravtory_config
         )
 
-        self.observation_space_config = survey_config["observations"]
-        self.action_space_config = survey_config["actions"]
         self.reward_config = survey_config["reward"]
         self.stop_config = survey_config["stopping"]
         self.validity_config = survey_config["constaints"]
@@ -27,7 +24,7 @@ class Survey:
         self.start_time = survey_config["start_time"]
         self.invalid_penality = survey_config["invalid_penality"]
 
-        self.save_config = survey_config['save']
+        self.save_config = survey_config["save"]
 
     def _start_time(self):
         if self.start_time == "random":
@@ -124,18 +121,19 @@ class Survey:
         observation["valid"] = self.validity(observation=observation)
 
         return observation
-    
+
     def __call__(self) -> Any:
-        stop = False 
+        stop = False
         results = {}
-        while not stop: 
+        while not stop:
             observation, reward, stop, _ = self.step(self.observator.default_locations)
-        
+
             results[self.observator.time.mjd] = {
-                obs_var: np.array(observation[obs_var], dtype=np.float32) for obs_var in observation
+                obs_var: np.array(observation[obs_var], dtype=np.float32)
+                for obs_var in observation
             }
-            results[self.observator.time.mjd]['reward'] = reward
+            results[self.observator.time.mjd]["reward"] = reward
 
-            # TODO checkpoint functionality 
+            # TODO checkpoint functionality
 
-        return results  
+        return results

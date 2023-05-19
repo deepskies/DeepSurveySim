@@ -33,17 +33,17 @@ class ObservationVariables:
                             "z": 925.0,
                             "Y": 1000.0,
                                 }
-                seeing (float) : [0, 3]; indicates the clarity of the sky. 
+                seeing (float) : [0, 3]; indicates the clarity of the sky.
                     3 is totally obscured, 0 is totally clear (as if observing through a vacuum). Default 0.9
                 optics_fwhm (float): Default 0.45
 
-                location (dict) : 
-                    dictionary containing either 'n_sites' 
+                location (dict) :
+                    dictionary containing either 'n_sites'
                         (Number of sequentically generated sites spanning the whole sky)
-                    or paired "ra" and "decl", containing lists of locations. 
-                    Default: 10 sites. 
+                    or paired "ra" and "decl", containing lists of locations.
+                    Default: 10 sites.
 
-                use_skybright (bool):  
+                use_skybright (bool):
                     use the skybright program to add additional variables to the program
                     Requires an outside download of PalPy (Not included with this distirbution)
                     Default: False
@@ -63,26 +63,28 @@ class ObservationVariables:
         self.to_radians = self.degree.to(self.radians)
 
         self.observator = self._init_observator(
-            observator_configuration["obs_latitude_degrees"],
-            observator_configuration["obs_logitude_degrees"],
-            observator_configuration["obs_elevation_meters"],
+            observator_configuration["latitude"],
+            observator_configuration["longitude"],
+            observator_configuration["elevation"],
         )
 
-        self.band_wavelengths = observator_configuration["bands"]
+        self.band_wavelengths = observator_configuration["wavelengths"]
 
-        self.seeing =  observator_configuration["seeing"]
+        self.seeing = observator_configuration["seeing"]
 
-        self.optics_fwhm = observator_configuration["optics_fwhm"]
+        self.optics_fwhm = observator_configuration["fwhm"]
 
-        self.default_locations = self._default_locations(**observator_configuration["location"])
+        self.default_locations = self._default_locations(
+            **observator_configuration["location"]
+        )
 
         self.time = self._time(0)
         self.location = self.default_locations
         self.band = "g"
 
         self.variables = self.observator_mapping()
-        if observator_configuration['use_skybright']: 
-            self.init_skybright(observator_configuration['skybright'])
+        if observator_configuration["use_skybright"]:
+            self.init_skybright(observator_configuration["skybright"])
 
     def update(
         self,
@@ -110,7 +112,7 @@ class ObservationVariables:
 
     def _default_locations(self, ra=None, decl=None, n_sites=None):
         n_sites = n_sites if n_sites is not None else 10
-        if (ra is None) & (decl in None):
+        if (ra is None) & (decl is None):
             decl = list(np.arange(-90, 90, step=int((90 * 2) / n_sites)))
             ra = list(np.arange(0, 360, step=int(360 / n_sites)))
 
@@ -151,9 +153,14 @@ class ObservationVariables:
         ra_degree: Union[float, list[float]],
         decl_degree: Union[float, list[float]],
     ):
+        if type(ra_degree) == float:
+            ra_degree = [ra_degree]
+        if type(decl_degree) == float:
+            decl_degree == [decl_degree]
+
         return astropy.coordinates.SkyCoord(
-            ra=ra_degree * self.to_radians * self.radians,
-            dec=decl_degree * self.to_radians * self.radians,
+            ra=[ra * self.to_radians for ra in ra_degree] * self.radians,
+            dec=[decl * self.to_radians for decl in decl_degree] * self.radians,
         )
 
     def calculate_sun_location(self):
@@ -256,6 +263,6 @@ class ObservationVariables:
             "band_seeing": self.calculate_seeing,
             "fwhm": self.calculate_seeing,
         }
-    
-    def init_skybright(self, skybright_config): 
+
+    def init_skybright(self, skybright_config):
         raise NotImplemented("Skybright integration not included in this release")
