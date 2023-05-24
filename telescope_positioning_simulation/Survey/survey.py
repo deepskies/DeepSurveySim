@@ -2,16 +2,25 @@
 Run a simulation, picking up the variables specified in the config file and updating the time and location based on the
 """
 
-from typing import Any, Union
+from typing import Union
 import numpy as np
 
 from telescope_positioning_simulation.Survey.observation_variables import (
     ObservationVariables,
 )
 
+from telescope_positioning_simulation.IO.read_config import ReadConfig
+
 
 class Survey:
-    def __init__(self, survey_config: dict, obseravtory_config: dict) -> None:
+    def __init__(self, survey_config: dict = {}, obseravtory_config: dict = {}) -> None:
+
+        default_survey = ReadConfig(None, survey=True)()
+        survey_config = {**survey_config, **default_survey}
+
+        default_obs = ReadConfig(None, survey=False)()
+        obseravtory_config = {**obseravtory_config, **default_obs}
+
         self.observator = ObservationVariables(
             observator_configuration=obseravtory_config
         )
@@ -111,6 +120,27 @@ class Survey:
 
     def _observation_calculation(self):
 
+        """
+
+                obs = {}
+        for function in seo_observatory.variables:
+            obs |= function()
+
+        obs["times"] = np.asarray(
+            [seo_observatory.time.mjd for _ in seo_observatory.location]
+        ).ravel()
+        obs["ra"] = np.asarray(
+            [seo_observatory.location.ra.value for _ in seo_observatory.time]
+        ).T.ravel()
+        obs["decl"] = np.asarray(
+            [seo_observatory.location.dec.value for _ in seo_observatory.time]
+        ).T.ravel()
+
+        for key in obs.keys():
+            obs[key] = obs[key].ravel()
+
+        """
+
         observation_functions = {
             self.observator.variables[var] for var in self.obs_variables
         }
@@ -125,7 +155,7 @@ class Survey:
 
         return observation
 
-    def __call__(self) -> Any:
+    def __call__(self):
         stop = False
         results = {}
         while not stop:
