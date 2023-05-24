@@ -27,7 +27,7 @@ def default_survey():
 def test_save_expected_results_file(default_survey):
     sample_results = {}
 
-    sample_results[default_survey.observator.time.mjd] = {
+    sample_results[default_survey.observator.time.mjd[0]] = {
         "airmass": np.array([1.0, 10.0, 100.0], dtype=np.float32),
         "reward": np.array([1, 2, 3], dtype=np.float32),
     }

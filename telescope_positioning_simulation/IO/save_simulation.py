@@ -24,12 +24,16 @@ class SaveSimulation:
 
         format_result = {
             index: {
-                key: self.survey_results[index][key].tolist()
+                key: self.survey_results[index][key]
+                .reshape(
+                    self.survey_results[index][key].size,
+                )
+                .tolist()
                 for key in self.survey_results[index].keys()
             }
             for index in self.survey_results.keys()
         }
-
+        print(format_result)
         with open(result_path, "w") as f:
             json.dump(format_result, f)
 
