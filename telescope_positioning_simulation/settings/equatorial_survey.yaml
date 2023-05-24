@@ -17,3 +17,5 @@ constaints: {"airmass": {"value": 2.0, "lesser": False},"alt": {"value": 20.0, "
 stopping: {"timestep": 400}
 
 save: "./equatorial_survey/"
+
+variables: ["airmass", 'ha', 'moon_airmass', 'lst', 'sun_airmass']

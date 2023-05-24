@@ -34,15 +34,16 @@ def observations(seo_observatory):
         [seo_observatory.time.mjd for _ in seo_observatory.location]
     ).ravel()
     obs["ra"] = np.asarray(
-        [seo_observatory.location.ra.value for _ in seo_observatory.time]
+        [seo_observatory.location.ra.value for _ in seo_observatory.time.ravel()]
     ).T.ravel()
     obs["decl"] = np.asarray(
-        [seo_observatory.location.dec.value for _ in seo_observatory.time]
+        [seo_observatory.location.dec.value for _ in seo_observatory.time.ravel()]
     ).T.ravel()
 
     for key in obs.keys():
         obs[key] = obs[key].ravel()
-
+        print(key)
+        print(obs[key])
     return pd.DataFrame(obs)
 
 
