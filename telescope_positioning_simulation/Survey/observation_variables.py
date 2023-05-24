@@ -55,7 +55,7 @@ class ObservationVariables:
 
                 Possible calculations are seen with ObservationVariables.variables
 
-                All variables are returned with the dimensions (n timesteps, n observation sites)
+                All variables are returned with the dimensions (n observation sites, n sites)
                     in a dictionary labeled with their variable names
         """
 
@@ -131,19 +131,24 @@ class ObservationVariables:
     def _airmass(self, location):
 
         alt = np.array([np.array(self._alt_az(l).alt.degree) for l in location])
-        cos_zd = np.cos(np.radians(90) - alt * self.to_radians)
+        cos_zd = np.cos(np.radians(90) - alt * self.degree.to(self.radians))
         a = numexpr.evaluate("462.46 + 2.8121/(cos_zd**2 + 0.22*cos_zd + 0.01)")
 
         airmass = numexpr.evaluate("sqrt((a*cos_zd)**2 + 2*a + 1) - a * cos_zd")
         airmass[(alt * self.to_radians) < 0] = np.nan
-
+        # airmass = airmass * self.radians.to(self.degree)
         return airmass
 
     def _time(self, time):
-        return astropy.time.Time(time * astropy.units.day, format="mjd")
+        return astropy.time.Time(time, format="mjd")
 
     def _alt_az(self, coordinates):
-        alt_az = self.observator.altaz(time=self.time, target=coordinates)
+        site = astropy.coordinates.EarthLocation.from_geodetic(
+            lon=self.observator.location.lon, lat=self.observator.location.lat
+        )
+
+        altaz_conversion = astropy.coordinates.AltAz(obstime=self.time, location=site)
+        alt_az = coordinates.transform_to(altaz_conversion)
 
         return alt_az
 
@@ -155,7 +160,7 @@ class ObservationVariables:
 
     def _ha(self, location):
         lst = self._local_sidereal_time()
-        ha = lst - location.ra.to_value(self.degree)
+        ha = lst - location.ra.value
         return ha
 
     def _sky_coordinates(
@@ -169,9 +174,12 @@ class ObservationVariables:
             decl_degree == [decl_degree]
 
         return astropy.coordinates.SkyCoord(
-            ra=[ra * self.to_radians for ra in ra_degree] * self.radians,
-            dec=[decl * self.to_radians for decl in decl_degree] * self.radians,
+            ra=ra_degree * self.degree, dec=decl_degree * self.degree, unit="deg"
         )
+
+    def calculate_lst(self):
+        lst = self._local_sidereal_time()
+        return {"lst": np.asarray([lst for _ in range(len(self.location))])}
 
     def calculate_sun_location(self):
 
@@ -195,7 +203,8 @@ class ObservationVariables:
     def calculate_sun_airmass(self):
 
         sun_coordinates = astropy.coordinates.get_sun(self.time)
-        sun_airmass = self._airmass(sun_coordinates)
+        sun_airmass = self._airmass(sun_coordinates)[0]
+
         return {
             "sun_airmass": np.asarray([sun_airmass for _ in range(len(self.location))])
         }
@@ -251,7 +260,7 @@ class ObservationVariables:
 
     def calculate_moon_airmass(self):
         moon_location = astropy.coordinates.get_moon(self.time)
-        moon_airmass = self._airmass(moon_location)
+        moon_airmass = self._airmass(moon_location)[0]
 
         return {
             "moon_airmass": np.asarray(
@@ -294,6 +303,7 @@ class ObservationVariables:
             self.calculate_moon_brightness,
             self.calculate_moon_ha,
             self.calculate_seeing,
+            self.calculate_lst,
         ]
 
     def init_skybright(self, skybright_config):

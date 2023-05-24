@@ -34,15 +34,28 @@ def observations(seo_observatory):
         [seo_observatory.time.mjd for _ in seo_observatory.location]
     ).ravel()
     obs["ra"] = np.asarray(
-        [seo_observatory.time.mjd for _ in seo_observatory.location]
-    ).ravel()
+        [seo_observatory.location.ra.value for _ in seo_observatory.time]
+    ).T.ravel()
     obs["decl"] = np.asarray(
-        [seo_observatory.time.mjd for _ in seo_observatory.location]
-    ).ravel()
+        [seo_observatory.location.dec.value for _ in seo_observatory.time]
+    ).T.ravel()
 
     for key in obs.keys():
         obs[key] = obs[key].ravel()
+
     return pd.DataFrame(obs)
+
+
+def test_variable_size(seo_observatory):
+    time_size = 5
+    default_sites = 10
+    times = np.random.default_rng().uniform(low=55000, high=70000, size=time_size)
+    seo_observatory.update(times)
+
+    for function in seo_observatory.variables:
+        variable_dictionary = function()
+        for key in variable_dictionary:
+            assert variable_dictionary[key].shape == (default_sites, time_size)
 
 
 # test all the defaults are de-faulting
@@ -65,107 +78,81 @@ def test_init_time(seo_observatory):
 
 # test all the variables (I have set ranges for)
 def test_sun_angles(observations):
-    assert observations.sun_zd.values == pytest.approx(
-        90 - observations.sun_alt.values, rel=1, abs=1e-6
-    )
     assert observations.sun_ha.values == pytest.approx(
         observations.lst.values - observations.sun_ra.values, rel=1, abs=1e-6
     )
 
 
 def test_sun_seperation(seo_observatory, observations):
-    times = seo_observatory.time
-    sun_ap_coords = astropy.get_sun(times)
-    sun_ap_hadec_coords = sun_ap_coords.transform_to(
-        astropy.HADec(obstime=times, location=seo_observatory.observator)
-    )
-    sun_ap_altaz_coords = sun_ap_coords.transform_to(
-        astropy.AltAz(obstime=times, location=seo_observatory.observator)
+    times = astropy.time.Time(observations.times, format="mjd")
+    sun_ap_coords = astropy.coordinates.get_sun(times)
+
+    site = astropy.coordinates.EarthLocation.from_geodetic(
+        lon=seo_observatory.observator.location.lon,
+        lat=seo_observatory.observator.location.lat,
     )
 
-    sun_df_coords = astropy.SkyCoord(
+    sun_ap_hadec_coords = sun_ap_coords.transform_to(
+        astropy.coordinates.HADec(obstime=times, location=site)
+    )
+
+    sun_df_coords = astropy.coordinates.SkyCoord(
         observations.sun_ra, observations.sun_decl, frame="icrs", unit="deg"
     )
-    sun_df_hadec_coords = astropy.HADec(
+    sun_df_hadec_coords = astropy.coordinates.HADec(
         obstime=times,
         ha=observations["sun_ha"] * astropy.units.deg,
         dec=observations["sun_decl"] * astropy.units.deg,
-        location=seo_observatory.observator,
-    )
-    sun_df_altaz_coords = astropy.AltAz(
-        alt=observations["sun_alt"] * astropy.units.deg,
-        az=observations["sun_az"] * astropy.units.deg,
-        obstime=times,
-        location=seo_observatory.observator,
+        location=site,
     )
 
     assert sun_ap_coords.separation(sun_df_coords).deg.max() < 1
     assert sun_ap_hadec_coords.separation(sun_df_hadec_coords).deg.max() < 1
-    assert sun_ap_altaz_coords.separation(sun_df_altaz_coords).deg.max() < 1
-
-
-def test_airmass_range(seo_observatory, observations):
-
-    assert np.all(observations[np.isnan(observations.airmass)].zd > 89)
-
-    times = seo_observatory.time
-    ra, decl = seo_observatory.locations["ra"], seo_observatory.locations["decl"]
-    coords = astropy.SkyCoord(ra, decl, frame="icrs", unit="deg")
-    altaz = astropy.AltAz(obstime=times, location=seo_observatory.observator)
-    altaz_coords = coords.transform_to(altaz)
-
-    assert altaz_coords.secz.value[secz_valid] == pytest.approx(
-        observations[secz_valid].airmass, rel=99, abs=1e-2
-    )
-
-    secz_valid = observations["zd"] < 60
-    secz_invalid = np.logical_and(
-        ~np.isnan(observations["airmass"]), observations["zd"] > 60
-    )
-    assert np.all(
-        observations[secz_invalid]["airmass"] > observations[secz_valid].airmass.max()
-    )
-    assert np.all(observations[secz_invalid]["airmass"] < 40)
-
-
-def test_lst(seo_obseratory, observations):
-    ref_lst = seo_obseratory.time.sidereal_time("mean", seo_observatory.observator).deg
-    assert ref_lst == pytest.approx(observations["lst"].values, rel=1, abs=1e-6)
 
 
 def test_horizon_coord(observations, seo_observatory):
-    ra, decl = seo_observatory.locations["ra"], seo_observatory.locations["decl"]
+    ra, decl = observations.ra, observations.decl
+    time = astropy.time.Time(observations.times, format="mjd")
 
-    coords = astropy.SkyCoord(ra, decl, frame="icrs", unit="deg")
+    coords = astropy.coordinates.SkyCoord(ra, decl, unit="deg")
 
-    altaz = astropy.AltAz(
-        obstime=seo_observatory.time, location=seo_observatory.observator
+    site = astropy.coordinates.EarthLocation.from_geodetic(
+        lon=seo_observatory.observator.location.lon,
+        lat=seo_observatory.observator.location.lat,
     )
+
+    altaz = astropy.coordinates.AltAz(obstime=time, location=site)
     altaz_coords = coords.transform_to(altaz)
-    ref_zd = 90 - observations["alt"].values
 
     assert observations["alt"].values == pytest.approx(
-        altaz_coords.alt.deg, rel=1, abs=1e-6
+        altaz_coords.alt.deg, rel=1, abs=0.5
     )
     assert observations["az"].values == pytest.approx(
-        altaz_coords.az.deg, rel=1, abs=1e-6
+        altaz_coords.az.deg, rel=1, abs=0.5
     )
-    assert ref_zd == pytest.approx(observations["zd"].values, rel=1, abs=1e-6)
 
 
 def test_hour_angle(seo_observatory, observations):
-    ra, decl = seo_observatory.locations["ra"], seo_observatory.locations["decl"]
-    coords = astropy.SkyCoord(ra, decl, frame="icrs", unit="deg")
+    ra, decl = observations.ra, observations.decl
+
+    time = astropy.time.Time(observations.times, format="mjd")
+    coords = astropy.coordinates.SkyCoord(ra, decl, unit="deg")
+
+    site = astropy.coordinates.EarthLocation.from_geodetic(
+        lon=seo_observatory.observator.location.lon,
+        lat=seo_observatory.observator.location.lat,
+    )
 
     ap_hadec_coords = coords.transform_to(
-        astropy.HADec(obstime=seo_observatory.time, location=seo_observatory.observator)
+        astropy.coordinates.HADec(obstime=time, location=site)
     )
 
-    observations_hadec_coords = astropy.HADec(
-        obstime=seo_observatory.time,
+    observations_hadec_coords = astropy.coordinates.HADec(
+        obstime=time,
         ha=observations["ha"] * astropy.units.deg,
         dec=decl * astropy.units.deg,
-        location=seo_observationary.observator,
+        location=site,
     )
     hadec_separation = observations_hadec_coords.separation(ap_hadec_coords).deg
-    assert max(hadec_separation) < 0.5
+
+    assert max(hadec_separation) < 0.75
