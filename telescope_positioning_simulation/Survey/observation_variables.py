@@ -295,8 +295,8 @@ class ObservationVariables:
 
     def calculate_observation_angles(self):
         hzcrds = [self._alt_az(l) for l in self.location]
-        alt = np.asarray([hzcrd.alt for hzcrd in hzcrds]) * self.degree
-        az = np.asarray([hzcrd.az for hzcrd in hzcrds]) * self.degree
+        alt = np.asarray([hzcrd.alt for hzcrd in hzcrds])
+        az = np.asarray([hzcrd.az for hzcrd in hzcrds])
 
         return {
             "az": az.reshape(len(self.location), len(self.time.ravel())),

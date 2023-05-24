@@ -16,10 +16,10 @@ class Survey:
     def __init__(self, survey_config: dict = {}, obseravtory_config: dict = {}) -> None:
 
         default_survey = ReadConfig(None, survey=True)()
-        survey_config = {**survey_config, **default_survey}
+        survey_config = {**default_survey, **survey_config}
 
         default_obs = ReadConfig(None, survey=False)()
-        obseravtory_config = {**obseravtory_config, **default_obs}
+        obseravtory_config = {**default_obs, **obseravtory_config}
 
         self.observator = ObservationVariables(
             observator_configuration=obseravtory_config
@@ -38,6 +38,12 @@ class Survey:
 
         self.save_config = survey_config["save"]
 
+        var_dict = self.observator.name_to_function()
+
+        self.observatory_variables = {
+            key: var_dict[key] for key in survey_config["variables"]
+        }
+
     def _start_time(self):
         if self.start_time == "random":
             return np.random.default_rng().integers(low=55000, high=70000)
@@ -53,13 +59,13 @@ class Survey:
         valid = True
 
         for condition in self.validity_config:
-            if self.stop_config[condition]["lesser"]:
+            if self.validity_config[condition]["lesser"]:
                 valid_condition = (
-                    observation[condition] <= self.stop_config[condition]["value"]
+                    observation[condition] >= self.validity_config[condition]["value"]
                 )
             else:
                 valid_condition = (
-                    observation[condition] >= self.stop_config[condition]["value"]
+                    observation[condition] <= self.validity_config[condition]["value"]
                 )
 
             valid = valid & valid_condition
@@ -87,7 +93,7 @@ class Survey:
 
             stop = stop & stop_condition
 
-        return stop
+        return not np.all(stop)
 
     def _reward(self, observation):
         metric = self.reward_config["monitor"]
@@ -112,7 +118,7 @@ class Survey:
         reward = self._reward(observation)
         self.timestep += 1
 
-        stop = self._stop_condition()
+        stop = self._stop_condition(observation)
 
         log = {}
 
@@ -126,7 +132,7 @@ class Survey:
         for function in seo_observatory.variables:
             obs |= function()
 
-        obs["times"] = np.asarray(
+        obs["mjd"] = np.asarray(
             [seo_observatory.time.mjd for _ in seo_observatory.location]
         ).ravel()
         obs["ra"] = np.asarray(
@@ -141,17 +147,14 @@ class Survey:
 
         """
 
-        observation_functions = {
-            self.observator.variables[var] for var in self.obs_variables
-        }
-
         observation = {}
-        for observation_calculation, name in zip(
-            observation_functions, self.obs_variables
-        ):
-            observation[name] = np.array(observation_calculation(), dtype=np.float32)
+        for var_name in self.observatory_variables:
+            observation[var_name] = self.observatory_variables[var_name]()[var_name]
 
         observation["valid"] = self.validity(observation=observation)
+        observation["mjd"] = np.asarray(
+            [self.observator.time.mjd for _ in self.observator.location]
+        )
 
         return observation
 

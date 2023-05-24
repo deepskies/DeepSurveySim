@@ -18,4 +18,4 @@ stopping: {"timestep": 400}
 
 save: "./equatorial_survey/"
 
-variables: ["airmass", 'ha', 'moon_airmass', 'lst', 'sun_airmass']
+variables: ["airmass", 'alt', 'ha', 'moon_airmass', 'lst', 'sun_airmass']
