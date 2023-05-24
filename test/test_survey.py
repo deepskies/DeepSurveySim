@@ -20,3 +20,31 @@ def test_default_init():
 def test_missing_params():
     input_config = {"nothing": 0}
     Survey(survey_config=input_config)
+
+
+def test_valid_observeration():
+    pass
+
+
+def test_invalid_observeration():
+    pass
+
+
+def test_dont_stop_me():
+    pass
+
+
+def test_stop_me():
+    pass
+
+
+def test_multi_reward():
+    pass
+
+
+def test_scale_reward():
+    pass
+
+
+def test_reset():
+    pass

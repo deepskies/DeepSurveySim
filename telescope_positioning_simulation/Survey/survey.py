@@ -40,7 +40,7 @@ class Survey:
 
     def _start_time(self):
         if self.start_time == "random":
-            return np.random.randint(low=55000, high=70000)
+            return np.random.default_rng().integers(low=55000, high=70000)
         else:
             return self.start_time
 
