@@ -126,27 +126,6 @@ class Survey:
 
     def _observation_calculation(self):
 
-        """
-
-                obs = {}
-        for function in seo_observatory.variables:
-            obs |= function()
-
-        obs["mjd"] = np.asarray(
-            [seo_observatory.time.mjd for _ in seo_observatory.location]
-        ).ravel()
-        obs["ra"] = np.asarray(
-            [seo_observatory.location.ra.value for _ in seo_observatory.time]
-        ).T.ravel()
-        obs["decl"] = np.asarray(
-            [seo_observatory.location.dec.value for _ in seo_observatory.time]
-        ).T.ravel()
-
-        for key in obs.keys():
-            obs[key] = obs[key].ravel()
-
-        """
-
         observation = {}
         for var_name in self.observatory_variables:
             observation[var_name] = self.observatory_variables[var_name]()[var_name]
