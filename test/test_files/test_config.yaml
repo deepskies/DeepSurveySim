@@ -1,0 +1,4 @@
+cloud_extinction: 1.0
+location:
+  n_sites: 100
+seeing: 2.0
