@@ -85,8 +85,12 @@ class ObservationVariables:
         self.time = self._time(60000)
         self.location = np.array(self.default_locations)
         self.band = "g"
-
+        self.delay = 0
         self.variables = self.observator_mapping()
+
+        self.slew_rate = observator_configuration["slew_expr"]
+        self.band_change_rate = observator_configuration["filter_change_rate"]
+        self.readout_seconds = observator_configuration["readout_seconds"]
 
         if observator_configuration["use_skybright"]:
             self.init_skybright(observator_configuration["skybright"])
@@ -103,6 +107,8 @@ class ObservationVariables:
 
             assert len(location["ra"]) == len(location["decl"]) != 0
 
+        self.delay = self._delay_time(location, band)
+
         self.time = self._time(time)
         self.band = band if band is not None else self.band
         self.location = (
@@ -110,6 +116,34 @@ class ObservationVariables:
             if location is None
             else self._sky_coordinates(location["ra"], location["decl"])
         )
+
+    def _angular_distance(self, location):
+        ra1, ra2 = (self.location["ra"] * np.pi / 180) + 10**-9, (
+            location["ra"] * np.pi / 180
+        ) + 10**-9
+        decl1, decl2 = (self.location["decl"] * np.pi / 180) + 10**-9, (
+            location["decl"] * np.pi / 180
+        ) + 10**-9
+
+        seperation = np.arccos(
+            np.sin(decl1) * np.sin(decl2)
+            + np.cos(decl1) * np.cos(decl2) * np.cos(abs(ra1 - ra2))
+        )
+        return seperation
+
+    def _delay_time(self, location, band):
+        if location is not None:
+            delay = self.slew_rate * self._angular_distance(location)
+        else:
+            delay = 0
+
+        if (band != self.band) and (band is not None):
+            delay += self.band_change_rate
+        delay += self.readout_seconds
+
+        delay_days = delay * 0.00001157407
+
+        return delay_days
 
     def _init_observator(
         self, obs_latitude_degrees, obs_logitude_degrees, obs_elevation_meters
@@ -166,8 +200,8 @@ class ObservationVariables:
 
     def _sky_coordinates(
         self,
-        ra_degree: Union[float, np.ndarray[float]],
-        decl_degree: Union[float, np.ndarray[float]],
+        ra_degree,
+        decl_degree,
     ):
         if type(ra_degree) == float:
             ra_degree = np.asarry([ra_degree])

@@ -19,6 +19,7 @@ slew_expr: 1.7
 
 # [bands]
 wavelengths: {'u': 380.0, 'g': 475.0, 'r': 635.0, 'i': 775.0, 'z': 925.0, 'Y': 1000.0}
+filter_change_rate: 0.0
 
 # [optics]
 fwhm: 0.45
@@ -34,9 +35,9 @@ readout_seconds: 27.0
 location : {'n_sites': 10}
 
 # skybright options
-use_skybright: False 
+use_skybright: False
 
-skybright: 
+skybright:
 # atmospheric extinction
   - k: [0.440000,  0.190000,  0.110000,  0.080000,  0.100000,  0.080000]
 
