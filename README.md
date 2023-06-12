@@ -3,23 +3,27 @@
 
 # Summary
 
-This repo is a stripped down version of the main [RLTelescope](https://github.com/deepskies/RLTelescopes) project.
+This repo is a stripped down version of the main [RLTelescope](https://github.com/deepskies/RLTelescopes); containing just the positioning simulation.
 
 
 # Installation
 ## Install from pip
 Simply run
 
-`pip install git+https://github.com/deepskies/RLTelescopes@playground`
+`pip install git+https://github.com/deepskies/TelescopePositioningSimulation`
 
-This will install the project with al its requirements.
+This will install the project with all its requirements.
 
 ## Install from source
 
 The project is built with [poetry](https://python-poetry.org/), and this is the recommended install method.
 All dependencies are resolved in the `poetry.lock` file, so you can install immediately from the command
 
-`poetry install`
+```
+poetry shell
+poetry install
+
+```
 
 Assuming you have poetry installed on your base environment.
 This will use lock file to install all the correct versions.
@@ -28,21 +32,55 @@ The command `exit` will take you out of this environment as it would for any oth
 
 Otherwise, you can use the `pyproject.toml` with your installer of choice.
 
+To verify all the depedencies are properly installed - run `python run pytest`.
 
-# Citation
+# Example:
 
-```
-@article{key ,
-    author = {You :D},
-    title = {title},
-    journal = {journal},
-    volume = {v},
-    year = {20XX},
-    number = {X},
-    pages = {XX--XX}
-}
+## To run as a live envoriment for RL
 
 ```
+from telescope_positioning_simulation.Survey.survey import Survey
+from telescope_positioning_simulation.IO.read_config import ReadConfig
+
+seo_config = ReadConfig(
+        observator_configuration="telescope_positioning_simulation/settings/SEO.yaml"
+    )()
+
+survey_config = ReadConfig(
+        observator_configuration="telescope_positioning_simulation/settings/equatorial_survey.yaml",
+        survey=True
+    )()
+
+env = Survey(seo_config, survey_config)
+observation = env._observation_calculation()
+
+stop = True
+while not stop:
+    action = model.predict_action(observation)
+    observation, reward, stop, log = env.step()
+
+```
+
+## To generate observations
+
+```
+from telescope_positioning_simulation.Survey.survey import Survey
+from telescope_positioning_simulation.IO.read_config import ReadConfig
+
+seo_config = ReadConfig(
+        observator_configuration="telescope_positioning_simulation/settings/SEO.yaml"
+    )()
+
+survey_config = ReadConfig(
+        observator_configuration="telescope_positioning_simulation/settings/equatorial_survey.yaml",
+        survey=True
+    )()
+
+env = Survey(seo_config, survey_config)
+observations = env()
+
+```
+
 
 # Acknowledgement
 And you <3
