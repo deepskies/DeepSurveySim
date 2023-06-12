@@ -132,7 +132,10 @@ class Survey:
 
         observation["valid"] = self.validity(observation=observation)
         observation["mjd"] = np.asarray(
-            [self.observator.time.mjd for _ in self.observator.location]
+            [
+                self.observator.time.mjd + self.observator.delay
+                for _ in self.observator.location
+            ]
         )
 
         return observation
