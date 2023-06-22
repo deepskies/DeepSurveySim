@@ -43,6 +43,7 @@ class Survey:
         self.observatory_variables = {
             key: var_dict[key] for key in survey_config["variables"]
         }
+        self.timestep = 0
 
     def _start_time(self):
         if self.start_time == "random":
@@ -114,7 +115,7 @@ class Survey:
 
         self.observator.update(**action)
         observation = self._observation_calculation()
-
+        observation['invalid'] = ~self.validity(observation)
         reward = self._reward(observation)
         self.timestep += 1
 

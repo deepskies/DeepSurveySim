@@ -118,12 +118,8 @@ class ObservationVariables:
         )
 
     def _angular_distance(self, location):
-        ra1, ra2 = (self.location["ra"] * np.pi / 180) + 10**-9, (
-            location["ra"] * np.pi / 180
-        ) + 10**-9
-        decl1, decl2 = (self.location["decl"] * np.pi / 180) + 10**-9, (
-            location["decl"] * np.pi / 180
-        ) + 10**-9
+        ra1, ra2 = np.array([(ra.ra.value* np.pi / 180) + 10**-9 for ra in self.location]), np.array([(ra * np.pi / 180) + 10**-9 for ra in location["ra"]])
+        decl1, decl2 = np.array([(decl.dec.value* np.pi / 180) + 10**-9 for decl in self.location]), np.array([(decl * np.pi / 180) + 10**-9 for decl in location["decl"]])
 
         seperation = np.arccos(
             np.sin(decl1) * np.sin(decl2)
