@@ -2,9 +2,10 @@
 Run a simulation, picking up the variables specified in the config file and updating the time and location based on the
 """
 
-from typing import Union
 import numpy as np
 import gymnasium as gym
+from gymnasium import spaces
+from telescope_positioning_simulation.Survey.survey import Survey as SurveyBase
 
 from telescope_positioning_simulation.Survey.observation_variables import (
     ObservationVariables,
@@ -13,7 +14,7 @@ from telescope_positioning_simulation.Survey.observation_variables import (
 from telescope_positioning_simulation.IO.read_config import ReadConfig
 
 
-class Survey(gym.Env):
+class Survey(SurveyBase):
     def __init__(self, survey_config: dict = {}, obseravtory_config: dict = {}) -> None:
 
         default_survey = ReadConfig(None, survey=True)()
@@ -41,6 +42,22 @@ class Survey(gym.Env):
 
         var_dict = self.observator.name_to_function()
 
+        # Define the observation space
+        self.action_space = spaces.Dict({
+            'ra': spaces.Box(low=0, high=360, shape=(1,), dtype=np.float32),
+            'decl': spaces.Box(low=-90.0, high=90.0, shape=(1,), dtype=np.float32),
+        })
+
+        self.observation_space = spaces.Dict({
+            'airmass': spaces.Box(low=-1000, high=1000, shape=(1,), dtype=np.float32),
+            'alt': spaces.Box(low=-90, high=90.0, shape=(1,), dtype=np.float32),
+            'ha': spaces.Box(low=-360, high=360.0, shape=(1,), dtype=np.float32),
+            'lst': spaces.Box(low=0, high=360.0, shape=(1,), dtype=np.float32),
+            'moon_airmass': spaces.Box(low=-1000, high=1000.0, shape=(1,), dtype=np.float32),
+            'sun_airmass': spaces.Box(low=-1000, high=1000.0, shape=(1,), dtype=np.float32),
+        })
+        # TODO: estimated for now using our offline dataset and tuned in order to make it work, to change with the correct ranges
+
         self.observatory_variables = {
             key: var_dict[key] for key in survey_config["variables"]
         }
@@ -52,10 +69,17 @@ class Survey(gym.Env):
         else:
             return self.start_time
 
-    def reset(self):
+    def reset(self, *, seed=None, options=None):
         self.observator.update(time=0, band="g")
         self.timestep = 0
-        self.time = self._start_time()
+        self.previous_mjd = self._start_time()
+        observation = self._observation_calculation()
+        info = {}
+        info['invalid'] = ~self.validity(observation)
+        info['mjd'] = observation["mjd"]
+        observation = {key: observation[key] for key in self.observatory_variables}
+        return observation, info # info required by RLLib
+
 
     def validity(self, observation):
         valid = True
@@ -76,7 +100,7 @@ class Survey(gym.Env):
     def _stop_condition(self, observation):
         """Returns true when stopping condition has been met"""
         stop = False
-        stop = stop or self.timestep >= self.stop_config["timestep"]
+        stop = stop and self.timestep <= self.stop_config["timestep"]
 
         other_conditions = [
             condition
@@ -97,10 +121,9 @@ class Survey(gym.Env):
 
         return not np.all(stop)
 
-    def _reward(self, observation):
+    def _reward(self, observation, info):
         metric = self.reward_config["monitor"]
         reward = observation[metric]
-
         if self.reward_config["min"]:
             reward = reward ** (-1)
 
@@ -109,37 +132,41 @@ class Survey(gym.Env):
                 reward > self.reward_config["threshold"], reward, self.invalid_penality
             )
 
-        reward = np.where(not observation["valid"], self.invalid_penality, reward)
-
+        reward = np.where(info["invalid"], self.invalid_penality, reward)
+        reward = reward[0]
         return reward
 
     def step(self, action: dict):
-
-        self.observator.update(**action)
+        action["time"] = self.previous_mjd
+        new_action = {"time": action["time"], "location": {"ra": action["ra"], "decl": action["decl"]}}
+        self.observator.update(**new_action)
         observation = self._observation_calculation()
-        reward = self._reward(observation)
+        info = {}
+        info["invalid"] = ~self.validity(observation)
+        info["mjd"] = observation["mjd"]
+        observation = {key: observation[key] for key in self.observatory_variables }
+        #observation['invalid'] = ~self.validity(observation)
+        reward = self._reward(observation, info)
         self.timestep += 1
+        self.previous_mjd = info["mjd"]
 
         stop = self._stop_condition(observation)
-
-        log = {}
-
-        return observation, reward, stop, log
+        truncated = False  # Additional truncated flag required by RLLib
+        return observation, reward, stop, truncated, info
 
     def _observation_calculation(self):
 
         observation = {}
         for var_name in self.observatory_variables:
-            observation[var_name] = self.observatory_variables[var_name]()[var_name]
+            observation[var_name] = np.asarray(self.observatory_variables[var_name]()[var_name][0])
 
         observation["valid"] = self.validity(observation=observation)
         observation["mjd"] = np.asarray(
             [
-                (self.observator.time.mjd + self.observator.delay).mean()
+                self.observator.time.mjd + self.observator.delay
                 for _ in self.observator.location
             ]
         )
-
         return observation
 
     def __call__(self):

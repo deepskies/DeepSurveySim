@@ -189,7 +189,7 @@ class ObservationVariables:
         a = numexpr.evaluate("462.46 + 2.8121/(cos_zd**2 + 0.22*cos_zd + 0.01)")
 
         airmass = numexpr.evaluate("sqrt((a*cos_zd)**2 + 2*a + 1) - a * cos_zd")
-        airmass[(alt * self.to_radians) < 0] = np.nan
+        # TODO: consider how to handle airmass[(alt * self.to_radians) < 0] = np.nan
         # airmass = airmass * self.radians.to(self.degree)
         return airmass
 
