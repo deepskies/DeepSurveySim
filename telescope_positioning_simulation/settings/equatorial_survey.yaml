@@ -11,7 +11,8 @@ invalid_penality: -100
 reward: {"monitor": "airmass", "min": False}
 
 # Constraints to decide what an invalid action is
-constaints: {"airmass": {"value": 2.0, "lesser": True},"alt": {"value": 20.0, "lesser": False},}
+#constaints: {"airmass": {"value": 3.0, "lesser": False},"alt": {"value": 20.0, "lesser": True},}
+constaints: {}
 
 # The stopping condition (s)
 stopping: {"timestep": 400}
