@@ -8,10 +8,11 @@ start_time: "random"
 invalid_penality: -100
 
 # What is used to decide reward
-reward: {"monitor": "airmass", "min": False}
+reward: {"monitor": "airmass", "min": True}
 
 # Constraints to decide what an invalid action is
-constaints: {"airmass": {"value": 2.0, "lesser": True},"alt": {"value": 20.0, "lesser": False},}
+# Observations must not fall into these constraints, so that an observation['alt']<20 is invalid. 
+constaints: {"airmass": {"value": 2.0, "lesser": False},"alt": {"value": 20.0, "lesser": True},}
 
 # The stopping condition (s)
 stopping: {"timestep": 400}
