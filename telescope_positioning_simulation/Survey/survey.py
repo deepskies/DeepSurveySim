@@ -13,8 +13,11 @@ from telescope_positioning_simulation.IO.read_config import ReadConfig
 
 
 class Survey:
-    def __init__(self, survey_config: dict = {}, obseravtory_config: dict = {}) -> None:
-
+    def __init__(
+        self,
+        obseravtory_config: dict = {},
+        survey_config: dict = {},
+    ) -> None:
         default_survey = ReadConfig(None, survey=True)()
         survey_config = {**default_survey, **survey_config}
 
@@ -37,6 +40,7 @@ class Survey:
         self.invalid_penality = survey_config["invalid_penality"]
 
         self.save_config = survey_config["save"]
+        self.timestep = 0
 
         var_dict = self.observator.name_to_function()
 
@@ -74,7 +78,7 @@ class Survey:
     def _stop_condition(self, observation):
         """Returns true when stopping condition has been met"""
         stop = False
-        stop = stop and self.timestep <= self.stop_config["timestep"]
+        stop = stop or self.timestep >= self.stop_config["timestep"]
 
         other_conditions = [
             condition
@@ -91,13 +95,14 @@ class Survey:
                     observation[condition] >= self.stop_config[condition]["value"]
                 )
 
-            stop = stop & stop_condition
+            stop = stop or stop_condition
 
-        return not np.all(stop)
+        return np.any(stop)
 
     def _reward(self, observation):
         metric = self.reward_config["monitor"]
         reward = observation[metric]
+
         if self.reward_config["min"]:
             reward = reward ** (-1)
 
@@ -106,7 +111,7 @@ class Survey:
                 reward > self.reward_config["threshold"], reward, self.invalid_penality
             )
 
-        reward = np.where(observation["invalid"], self.invalid_penality, reward)
+        reward = np.where(not observation["valid"], self.invalid_penality, reward)
 
         return reward
 
@@ -132,11 +137,8 @@ class Survey:
 
         observation["valid"] = self.validity(observation=observation)
         observation["mjd"] = np.asarray(
-            [
-                self.observator.time.mjd + self.observator.delay
-                for _ in self.observator.location
-            ]
-        )
+            self.observator.time.mjd + self.observator.delay
+        ).mean()
 
         return observation
 
