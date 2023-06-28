@@ -8,7 +8,7 @@ start_time: "random"
 invalid_penality: -100
 
 # What is used to decide reward
-reward: {"monitor": "airmass", "min": False}
+reward: {"monitor": "airmass", "min": True}
 
 # Constraints to decide what an invalid action is
 #constaints: {"airmass": {"value": 3.0, "lesser": False},"alt": {"value": 20.0, "lesser": True},}

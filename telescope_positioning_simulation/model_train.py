@@ -13,7 +13,7 @@ survey_config = ReadConfig(
         survey=True
     )()
 
-survey_config['location']  = {'ra': [0], 'decl':[0]}
+survey_config['location']  = {'ra': 0, 'decl':0}
 
 def env_creator(env_config):
     return Survey(seo_config, survey_config)
