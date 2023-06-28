@@ -12,6 +12,8 @@ pandas = "^1.5.3"
 astroplan = "^0.8"
 PyYAML = "^6.0"
 numexpr = "^2.8.4"
+skybright = {git = "https://github.com/ehneilsen/skybright.git"}
+configparser = "^5.3.0"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^4.0.0"

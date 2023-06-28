@@ -8,6 +8,7 @@ from typing import Union
 import astroplan
 import astropy
 import numpy as np
+import os
 
 import numexpr
 from collections.abc import Iterable
@@ -59,6 +60,8 @@ class ObservationVariables:
                 All variables are returned with the dimensions (n observation sites, n sites)
                     in a dictionary labeled with their variable names
         """
+        if observator_configuration["use_skybright"]:
+            self._init_skybright(observator_configuration["skybright"])
 
         self.degree = astropy.units.deg
         self.radians = astropy.units.rad
@@ -75,6 +78,7 @@ class ObservationVariables:
         self.band_wavelengths = observator_configuration["wavelengths"]
 
         self.seeing = observator_configuration["seeing"]
+        self.clouds = observator_configuration["cloud_extinction"]
 
         self.optics_fwhm = observator_configuration["fwhm"]
 
@@ -92,8 +96,29 @@ class ObservationVariables:
         self.band_change_rate = observator_configuration["filter_change_rate"]
         self.readout_seconds = observator_configuration["readout_seconds"]
 
-        if observator_configuration["use_skybright"]:
-            self.init_skybright(observator_configuration["skybright"])
+    def _init_skybright(self, skybright_config):
+        try:
+            from skybright import skybright
+            from configparser import ConfigParser
+
+        except ModuleNotFoundError:
+            print(
+                "ERROR: skybright module not found, please install it from https://github.com/ehneilsen/skybright.git"
+            )
+
+        default_config_path = (
+            f"{os.path.dirname(__file__).rstrip('/')}/../settings/skybright_config.conf"
+        )
+
+        config_path = (
+            default_config_path
+            if skybright_config["config"] == "default"
+            else skybright_config["config"]
+        )
+        skybright_config_file = ConfigParser()
+        skybright_config_file.read(config_path)
+
+        self.skybright = skybright.MoonSkyModel(skybright_config_file)
 
     def update(
         self,
@@ -105,25 +130,22 @@ class ObservationVariables:
             assert "ra" in location.keys()
             assert "decl" in location.keys()
 
+            location = self._sky_coordinates(location["ra"], location["decl"])
             self.delay = self._delay_time(location, band)
         else:
             self.delay = self._delay_time(self.location, band)
 
         self.time = self._time(time)
         self.band = band if band is not None else self.band
-        self.location = (
-            self.location
-            if location is None
-            else self._sky_coordinates(location["ra"], location["decl"])
-        )
+        self.location = self.location if location is None else location
 
     def _angular_distance(self, location):
         ra1, ra2 = np.array(
             (self.location.ra.value * np.pi / 180) + 10**-9
-        ), np.array((location["ra"] * np.pi / 180) + 10**-9)
+        ), np.array((location.ra.value * np.pi / 180) + 10**-9)
         decl1, decl2 = np.array(
             (self.location.dec.value * np.pi / 180) + 10**-9
-        ), np.array((location["decl"] * np.pi / 180) + 10**-9)
+        ), np.array((location.dec.value * np.pi / 180) + 10**-9)
 
         seperation = np.arccos(
             np.sin(decl1) * np.sin(decl2)
@@ -206,7 +228,7 @@ class ObservationVariables:
 
     def calculate_lst(self):
         lst = self._local_sidereal_time()
-        return {"lst": np.asarray(lst)}
+        return {"lst": np.asarray([lst for _ in range(len(self.location))])}
 
     def calculate_sun_location(self):
 
@@ -216,23 +238,24 @@ class ObservationVariables:
         sun_decl = sun_coordinates.dec.to_value(self.degree)
 
         return {
-            "sun_ra": np.asarray(sun_ra),
-            "sun_decl": np.asarray(sun_decl),
+            "sun_ra": np.asarray([sun_ra for _ in range(len(self.location))]),
+            "sun_decl": np.asarray([sun_decl for _ in range(len(self.location))]),
         }
 
     def calculate_sun_ha(self):
 
         sun_coordinates = astropy.coordinates.get_sun(self.time)
-
         sun_ha = self._ha(sun_coordinates)
-        return {"sun_ha": np.asarray(sun_ha)}
+        return {"sun_ha": np.asarray([sun_ha for _ in range(len(self.location))])}
 
     def calculate_sun_airmass(self):
 
         sun_coordinates = astropy.coordinates.get_sun(self.time)
         sun_airmass = self._airmass(sun_coordinates)
 
-        return {"sun_airmass": np.asarray(sun_airmass)}
+        return {
+            "sun_airmass": np.asarray([sun_airmass for _ in range(len(self.location))])
+        }
 
     def calculate_moon_location(self):
         moon_location = astropy.coordinates.get_moon(self.time)
@@ -240,15 +263,15 @@ class ObservationVariables:
         moon_decl = moon_location.dec.to_value(self.degree)
 
         return {
-            "moon_ra": np.asarray(moon_ra),
-            "moon_decl": np.asarray(moon_decl),
+            "moon_ra": np.asarray([moon_ra for _ in range(len(self.location))]),
+            "moon_decl": np.asarray([moon_decl for _ in range(len(self.location))]),
         }
 
     def calculate_moon_brightness(self):
 
         moon_location = astropy.coordinates.get_moon(self.time)
 
-        moon_phase = astroplan.moon.moon_phase_angle(self.time)
+        moon_phase = astroplan.moon.moon_phase_angle(self.time).to_value(self.degree)
         moon_illumination = self.observator.moon_illumination(self.time)
 
         moon_elongation = (
@@ -262,30 +285,41 @@ class ObservationVariables:
         moon_Vmagintude = -12.73 + 0.026 * np.abs(alpha) + 4e-9 * (alpha**4)
 
         moon_seperation = np.asarray(
-            moon_location.separation(self.location).to_value(self.degree)
+            [
+                moon_location.separation(location).to_value(self.degree)
+                for location in self.location
+            ]
         )
         return {
-            "moon_phase": np.asarray(moon_phase),
-            "moon_illumination": np.asarray(moon_illumination),
-            "moon_Vmagintude": np.asarray(moon_Vmagintude),
+            "moon_elongation": np.asarray(
+                [moon_elongation for _ in range(len(self.location))]
+            ),
+            "moon_phase": np.asarray([moon_phase for _ in range(len(self.location))]),
+            "moon_illumination": np.asarray(
+                [moon_illumination for _ in range(len(self.location))]
+            ),
+            "moon_Vmagintude": np.asarray(
+                [moon_Vmagintude for _ in range(len(self.location))]
+            ),
             "moon_seperation": moon_seperation,
         }
 
     def calculate_moon_ha(self):
         moon_location = astropy.coordinates.get_moon(self.time)
         moon_ha = self._ha(moon_location)
-        return {"moon_ha": np.asarray(moon_ha)}
+        return {"moon_ha": np.asarray([moon_ha for _ in range(len(self.location))])}
 
     def calculate_moon_airmass(self):
         moon_location = astropy.coordinates.get_moon(self.time)
         moon_airmass = self._airmass(moon_location)
-
-        return {"moon_airmass": np.asarray(moon_airmass)}
+        return {
+            "moon_airmass": np.array([moon_airmass for _ in range(len(self.location))])
+        }
 
     def calculate_observation_angles(self):
-        hzcrds = self._alt_az(self.location)
-        alt = np.array(hzcrds.alt.degree)
-        az = np.array(hzcrds.az.degree)
+        hzcrds = [self._alt_az(location) for location in self.location]
+        alt = np.asarray([hzcrd.alt.degree for hzcrd in hzcrds])
+        az = np.asarray([hzcrd.az.degree for hzcrd in hzcrds])
 
         return {
             "az": az,
@@ -293,19 +327,59 @@ class ObservationVariables:
         }
 
     def calculate_observation_ha(self):
-        return {"ha": np.asarray([self._ha(self.location)])}
+        return {"ha": np.asarray([self._ha(location) for location in self.location])}
 
     def calculate_observation_airmass(self):
-        return {"airmass": self._airmass(self.location)}
+        return {
+            "airmass": np.asarray(
+                [self._airmass(location) for location in self.location]
+            )
+        }
 
     def calculate_seeing(self):
-        airmass = self._airmass(self.location)
+        airmass = self.calculate_observation_airmass()["airmass"]
         pt_seeing = self.seeing * airmass**0.6
         wavelength = self.band_wavelengths[self.band]
         band_seeing = pt_seeing * (500.0 / wavelength) ** 0.2
         fwhm = np.sqrt(band_seeing**2 + self.optics_fwhm**2)
 
         return {"pt_seeing": pt_seeing, "band_seeing": band_seeing, "fwhm": fwhm}
+
+    def calculate_sky_magnitude(self):
+        if hasattr(self, "skybright"):
+            m0 = self.skybright.m_zen[self.band]
+            nu = 10 ** (-1 * self.clouds / 2.5)
+            fwhm500 = self.calculate_seeing()["fwhm"]
+
+            sky_mag = np.asarray(
+                [
+                    self.skybright(
+                        self.time.mjd.mean(),
+                        location.ra.degree,
+                        location.dec.degree,
+                        self.band,
+                        moon_crds=astropy.coordinates.get_moon(self.time),
+                        moon_elongation=moon_elongation,
+                        sun_crds=astropy.coordinates.get_sun(self.time),
+                    )
+                    for location, moon_elongation in zip(
+                        self.location,
+                        self.calculate_moon_brightness()["moon_elongation"],
+                    )
+                ]
+            )
+
+            tau = ((nu * (0.9 / fwhm500)) ** 2) * (10 ** ((sky_mag - m0) / 2.5))
+
+            teff = tau * self.readout_seconds * 0.00001157407 * 86400
+
+            return {
+                "sky_magnitude": np.array(sky_mag),
+                "tau": np.array(tau),
+                "teff": np.array(teff),
+            }
+        else:
+            return {}
 
     def observator_mapping(self):
         return [
@@ -321,6 +395,7 @@ class ObservationVariables:
             self.calculate_moon_ha,
             self.calculate_seeing,
             self.calculate_lst,
+            self.calculate_sky_magnitude,
         ]
 
     def name_to_function(self):
@@ -330,6 +405,3 @@ class ObservationVariables:
             function_map = {name: function for name in function_result.keys()}
             names = {**function_map, **names}
         return names
-
-    def init_skybright(self, skybright_config):
-        raise NotImplemented("Skybright integration not included in this release")
