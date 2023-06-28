@@ -42,8 +42,6 @@ def observations(seo_observatory):
 
     for key in obs.keys():
         obs[key] = obs[key].ravel()
-        print(key)
-        print(obs[key])
     return pd.DataFrame(obs)
 
 
@@ -56,6 +54,7 @@ def test_variable_size(seo_observatory):
     for function in seo_observatory.variables:
         variable_dictionary = function()
         for key in variable_dictionary:
+            print(key, variable_dictionary[key].shape)
             assert variable_dictionary[key].shape == (default_sites, time_size)
 
 

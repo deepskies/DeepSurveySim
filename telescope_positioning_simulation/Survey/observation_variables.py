@@ -130,25 +130,22 @@ class ObservationVariables:
             assert "ra" in location.keys()
             assert "decl" in location.keys()
 
+            location = self._sky_coordinates(location["ra"], location["decl"])
             self.delay = self._delay_time(location, band)
         else:
             self.delay = self._delay_time(self.location, band)
 
         self.time = self._time(time)
         self.band = band if band is not None else self.band
-        self.location = (
-            self.location
-            if location is None
-            else self._sky_coordinates(location["ra"], location["decl"])
-        )
+        self.location = self.location if location is None else location
 
     def _angular_distance(self, location):
         ra1, ra2 = np.array(
             (self.location.ra.value * np.pi / 180) + 10**-9
-        ), np.array((location["ra"] * np.pi / 180) + 10**-9)
+        ), np.array((location.ra.value * np.pi / 180) + 10**-9)
         decl1, decl2 = np.array(
             (self.location.dec.value * np.pi / 180) + 10**-9
-        ), np.array((location["decl"] * np.pi / 180) + 10**-9)
+        ), np.array((location.dec.value * np.pi / 180) + 10**-9)
 
         seperation = np.arccos(
             np.sin(decl1) * np.sin(decl2)
@@ -241,16 +238,15 @@ class ObservationVariables:
         sun_decl = sun_coordinates.dec.to_value(self.degree)
 
         return {
-            "sun_ra": np.asarray(sun_ra),
-            "sun_decl": np.asarray(sun_decl),
+            "sun_ra": np.asarray([sun_ra for _ in range(len(self.location))]),
+            "sun_decl": np.asarray([sun_decl for _ in range(len(self.location))]),
         }
 
     def calculate_sun_ha(self):
 
         sun_coordinates = astropy.coordinates.get_sun(self.time)
-
         sun_ha = self._ha(sun_coordinates)
-        return {"sun_ha": np.asarray(sun_ha)}
+        return {"sun_ha": np.asarray([sun_ha for _ in range(len(self.location))])}
 
     def calculate_sun_airmass(self):
 
@@ -267,15 +263,15 @@ class ObservationVariables:
         moon_decl = moon_location.dec.to_value(self.degree)
 
         return {
-            "moon_ra": np.asarray(moon_ra),
-            "moon_decl": np.asarray(moon_decl),
+            "moon_ra": np.asarray([moon_ra for _ in range(len(self.location))]),
+            "moon_decl": np.asarray([moon_decl for _ in range(len(self.location))]),
         }
 
     def calculate_moon_brightness(self):
 
         moon_location = astropy.coordinates.get_moon(self.time)
 
-        moon_phase = astroplan.moon.moon_phase_angle(self.time)
+        moon_phase = astroplan.moon.moon_phase_angle(self.time).to_value(self.degree)
         moon_illumination = self.observator.moon_illumination(self.time)
 
         moon_elongation = (
@@ -289,20 +285,29 @@ class ObservationVariables:
         moon_Vmagintude = -12.73 + 0.026 * np.abs(alpha) + 4e-9 * (alpha**4)
 
         moon_seperation = np.asarray(
-            moon_location.separation(self.location).to_value(self.degree)
+            [
+                moon_location.separation(location).to_value(self.degree)
+                for location in self.location
+            ]
         )
         return {
-            "moon_elongation": np.asarray(moon_elongation),
-            "moon_phase": np.asarray(moon_phase),
-            "moon_illumination": np.asarray(moon_illumination),
-            "moon_Vmagintude": np.asarray(moon_Vmagintude),
+            "moon_elongation": np.asarray(
+                [moon_elongation for _ in range(len(self.location))]
+            ),
+            "moon_phase": np.asarray([moon_phase for _ in range(len(self.location))]),
+            "moon_illumination": np.asarray(
+                [moon_illumination for _ in range(len(self.location))]
+            ),
+            "moon_Vmagintude": np.asarray(
+                [moon_Vmagintude for _ in range(len(self.location))]
+            ),
             "moon_seperation": moon_seperation,
         }
 
     def calculate_moon_ha(self):
         moon_location = astropy.coordinates.get_moon(self.time)
         moon_ha = self._ha(moon_location)
-        return {"moon_ha": np.asarray(moon_ha)}
+        return {"moon_ha": np.asarray([moon_ha for _ in range(len(self.location))])}
 
     def calculate_moon_airmass(self):
         moon_location = astropy.coordinates.get_moon(self.time)
@@ -312,9 +317,9 @@ class ObservationVariables:
         }
 
     def calculate_observation_angles(self):
-        hzcrds = self._alt_az(self.location)
-        alt = np.array(hzcrds.alt.degree)
-        az = np.array(hzcrds.az.degree)
+        hzcrds = [self._alt_az(location) for location in self.location]
+        alt = np.asarray([hzcrd.alt.degree for hzcrd in hzcrds])
+        az = np.asarray([hzcrd.az.degree for hzcrd in hzcrds])
 
         return {
             "az": az,
@@ -322,13 +327,17 @@ class ObservationVariables:
         }
 
     def calculate_observation_ha(self):
-        return {"ha": np.asarray(self._ha(self.location))}
+        return {"ha": np.asarray([self._ha(location) for location in self.location])}
 
     def calculate_observation_airmass(self):
-        return {"airmass": self._airmass(self.location)}
+        return {
+            "airmass": np.asarray(
+                [self._airmass(location) for location in self.location]
+            )
+        }
 
     def calculate_seeing(self):
-        airmass = self._airmass(self.location)
+        airmass = self.calculate_observation_airmass()["airmass"]
         pt_seeing = self.seeing * airmass**0.6
         wavelength = self.band_wavelengths[self.band]
         band_seeing = pt_seeing * (500.0 / wavelength) ** 0.2
@@ -342,14 +351,22 @@ class ObservationVariables:
             nu = 10 ** (-1 * self.clouds / 2.5)
             fwhm500 = self.calculate_seeing()["fwhm"]
 
-            sky_mag = self.skybright(
-                self.time.mjd.mean(),
-                self.location.ra.degree,
-                self.location.dec.degree,
-                self.band,
-                moon_crds=astropy.coordinates.get_moon(self.time),
-                moon_elongation=self.calculate_moon_brightness()["moon_elongation"],
-                sun_crds=astropy.coordinates.get_sun(self.time),
+            sky_mag = np.asarray(
+                [
+                    self.skybright(
+                        self.time.mjd.mean(),
+                        location.ra.degree,
+                        location.dec.degree,
+                        self.band,
+                        moon_crds=astropy.coordinates.get_moon(self.time),
+                        moon_elongation=moon_elongation,
+                        sun_crds=astropy.coordinates.get_sun(self.time),
+                    )
+                    for location, moon_elongation in zip(
+                        self.location,
+                        self.calculate_moon_brightness()["moon_elongation"],
+                    )
+                ]
             )
 
             tau = ((nu * (0.9 / fwhm500)) ** 2) * (10 ** ((sky_mag - m0) / 2.5))

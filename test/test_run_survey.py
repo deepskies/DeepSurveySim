@@ -24,13 +24,13 @@ def survey_setup():
     observations = []
     rewards = []
     stops = []
-    mjd = 60000
+    mjd = np.array(60000)
 
     for _ in range(20):
         action = {
             "location": {
-                "decl": np.random.default_rng().integers(-90, 90),
-                "ra": np.random.default_rng().integers(0, 360),
+                "decl": [np.random.default_rng().integers(-90, 90)],
+                "ra": [np.random.default_rng().integers(0, 360)],
             },
             "time": mjd,
         }
@@ -62,12 +62,12 @@ def test_has_valid(survey_setup):
 
 
 def test_valid_matchup(survey_setup):
-    reward = np.array(survey_setup[1])
-    valid = np.array([obs["valid"] for obs in survey_setup[0]])
+    reward = np.array([survey.ravel() for survey in survey_setup[1]])
+    valid = np.array([obs["valid"].ravel() for obs in survey_setup[0]])
     assert (reward[~valid] == -100).all()
 
 
 def test_has_reward(survey_setup):
-    reward = np.array(survey_setup[1])
-    valid = np.array([obs["valid"] for obs in survey_setup[0]])
+    reward = np.array([survey.ravel() for survey in survey_setup[1]])
+    valid = np.array([obs["valid"].ravel() for obs in survey_setup[0]])
     assert (reward[valid] != -100).all()

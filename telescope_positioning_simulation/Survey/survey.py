@@ -133,7 +133,6 @@ class Survey:
 
         observation = {}
         for var_name in self.observatory_variables:
-            print(self.observatory_variables)
             observation[var_name] = self.observatory_variables[var_name]()[var_name]
 
         observation["valid"] = self.validity(observation=observation)
