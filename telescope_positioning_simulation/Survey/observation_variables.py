@@ -61,7 +61,7 @@ class ObservationVariables:
                     in a dictionary labeled with their variable names
         """
         if observator_configuration["use_skybright"]:
-            self.init_skybright(observator_configuration["skybright"])
+            self._init_skybright(observator_configuration["skybright"])
 
         self.degree = astropy.units.deg
         self.radians = astropy.units.rad
@@ -95,6 +95,30 @@ class ObservationVariables:
         self.slew_rate = observator_configuration["slew_expr"]
         self.band_change_rate = observator_configuration["filter_change_rate"]
         self.readout_seconds = observator_configuration["readout_seconds"]
+
+    def _init_skybright(self, skybright_config):
+        try:
+            from skybright import skybright
+            from configparser import ConfigParser
+
+        except ModuleNotFoundError:
+            print(
+                "ERROR: skybright module not found, please install it from https://github.com/ehneilsen/skybright.git"
+            )
+
+        default_config_path = (
+            f"{os.path.dirname(__file__).rstrip('/')}/../settings/skybright_config.conf"
+        )
+
+        config_path = (
+            default_config_path
+            if skybright_config["config"] == "default"
+            else skybright_config["config"]
+        )
+        skybright_config_file = ConfigParser()
+        skybright_config_file.read(config_path)
+
+        self.skybright = skybright.MoonSkyModel(skybright_config_file)
 
     def update(
         self,
@@ -207,7 +231,7 @@ class ObservationVariables:
 
     def calculate_lst(self):
         lst = self._local_sidereal_time()
-        return {"lst": np.asarray(lst)}
+        return {"lst": np.asarray([lst for _ in range(len(self.location))])}
 
     def calculate_sun_location(self):
 
@@ -233,7 +257,9 @@ class ObservationVariables:
         sun_coordinates = astropy.coordinates.get_sun(self.time)
         sun_airmass = self._airmass(sun_coordinates)
 
-        return {"sun_airmass": np.asarray(sun_airmass)}
+        return {
+            "sun_airmass": np.asarray([sun_airmass for _ in range(len(self.location))])
+        }
 
     def calculate_moon_location(self):
         moon_location = astropy.coordinates.get_moon(self.time)
@@ -281,8 +307,9 @@ class ObservationVariables:
     def calculate_moon_airmass(self):
         moon_location = astropy.coordinates.get_moon(self.time)
         moon_airmass = self._airmass(moon_location)
-
-        return {"moon_airmass": np.asarray(moon_airmass)}
+        return {
+            "moon_airmass": np.array([moon_airmass for _ in range(len(self.location))])
+        }
 
     def calculate_observation_angles(self):
         hzcrds = self._alt_az(self.location)
@@ -295,7 +322,7 @@ class ObservationVariables:
         }
 
     def calculate_observation_ha(self):
-        return {"ha": np.asarray([self._ha(self.location)])}
+        return {"ha": np.asarray(self._ha(self.location))}
 
     def calculate_observation_airmass(self):
         return {"airmass": self._airmass(self.location)}
@@ -308,55 +335,6 @@ class ObservationVariables:
         fwhm = np.sqrt(band_seeing**2 + self.optics_fwhm**2)
 
         return {"pt_seeing": pt_seeing, "band_seeing": band_seeing, "fwhm": fwhm}
-
-    def observator_mapping(self):
-        return [
-            self.calculate_sun_location,
-            self.calculate_sun_airmass,
-            self.calculate_sun_ha,
-            self.calculate_observation_ha,
-            self.calculate_observation_angles,
-            self.calculate_observation_airmass,
-            self.calculate_moon_airmass,
-            self.calculate_moon_location,
-            self.calculate_moon_brightness,
-            self.calculate_moon_ha,
-            self.calculate_seeing,
-            self.calculate_lst,
-            self.calculate_sky_magnitude,
-        ]
-
-    def name_to_function(self):
-        names = {}
-        for function in self.observator_mapping():
-            function_result = function()
-            function_map = {name: function for name in function_result.keys()}
-            names = {**function_map, **names}
-        return names
-
-    def init_skybright(self, skybright_config):
-        try:
-            from skybright import skybright
-            from configparser import ConfigParser
-
-        except ModuleNotFoundError:
-            print(
-                "ERROR: skybright module not found, please install it from https://github.com/ehneilsen/skybright.git"
-            )
-
-        default_config_path = (
-            f"{os.path.dirname(__file__).rstrip('/')}/../settings/skybright_config.conf"
-        )
-
-        config_path = (
-            default_config_path
-            if skybright_config["config"] == "default"
-            else skybright_config["config"]
-        )
-        skybright_config_file = ConfigParser()
-        skybright_config_file.read(config_path)
-
-        self.skybright = skybright.MoonSkyModel(skybright_config_file)
 
     def calculate_sky_magnitude(self):
         if hasattr(self, "skybright"):
@@ -385,3 +363,28 @@ class ObservationVariables:
             }
         else:
             return {}
+
+    def observator_mapping(self):
+        return [
+            self.calculate_sun_location,
+            self.calculate_sun_airmass,
+            self.calculate_sun_ha,
+            self.calculate_observation_ha,
+            self.calculate_observation_angles,
+            self.calculate_observation_airmass,
+            self.calculate_moon_airmass,
+            self.calculate_moon_location,
+            self.calculate_moon_brightness,
+            self.calculate_moon_ha,
+            self.calculate_seeing,
+            self.calculate_lst,
+            self.calculate_sky_magnitude,
+        ]
+
+    def name_to_function(self):
+        names = {}
+        for function in self.observator_mapping():
+            function_result = function()
+            function_map = {name: function for name in function_result.keys()}
+            names = {**function_map, **names}
+        return names
