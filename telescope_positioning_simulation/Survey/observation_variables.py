@@ -364,10 +364,10 @@ class ObservationVariables:
             nu = 10 ** (-1 * self.clouds / 2.5)
             fwhm500 = self.calculate_seeing()["fwhm"]
 
-            sky_mag = self.calc_sky(
-                self.time.mjd,
-                self.location.ra,
-                self.location.decl,
+            sky_mag = self.skybright(
+                self.time.mjd.mean(),
+                self.location.ra.degree,
+                self.location.dec.degree,
                 self.band,
                 moon_crds=astropy.coordinates.get_moon(self.time),
                 moon_elongation=self.calculate_moon_brightness()["moon_elongation"],
