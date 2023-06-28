@@ -8,6 +8,7 @@ from typing import Union
 import astroplan
 import astropy
 import numpy as np
+import os
 
 import numexpr
 from collections.abc import Iterable
@@ -59,6 +60,8 @@ class ObservationVariables:
                 All variables are returned with the dimensions (n observation sites, n sites)
                     in a dictionary labeled with their variable names
         """
+        if observator_configuration["use_skybright"]:
+            self.init_skybright(observator_configuration["skybright"])
 
         self.degree = astropy.units.deg
         self.radians = astropy.units.rad
@@ -75,6 +78,7 @@ class ObservationVariables:
         self.band_wavelengths = observator_configuration["wavelengths"]
 
         self.seeing = observator_configuration["seeing"]
+        self.clouds = observator_configuration["cloud_extinction"]
 
         self.optics_fwhm = observator_configuration["fwhm"]
 
@@ -91,9 +95,6 @@ class ObservationVariables:
         self.slew_rate = observator_configuration["slew_expr"]
         self.band_change_rate = observator_configuration["filter_change_rate"]
         self.readout_seconds = observator_configuration["readout_seconds"]
-
-        if observator_configuration["use_skybright"]:
-            self.init_skybright(observator_configuration["skybright"])
 
     def update(
         self,
@@ -265,6 +266,7 @@ class ObservationVariables:
             moon_location.separation(self.location).to_value(self.degree)
         )
         return {
+            "moon_elongation": np.asarray(moon_elongation),
             "moon_phase": np.asarray(moon_phase),
             "moon_illumination": np.asarray(moon_illumination),
             "moon_Vmagintude": np.asarray(moon_Vmagintude),
@@ -321,6 +323,7 @@ class ObservationVariables:
             self.calculate_moon_ha,
             self.calculate_seeing,
             self.calculate_lst,
+            self.calculate_sky_magnitude,
         ]
 
     def name_to_function(self):
@@ -332,4 +335,53 @@ class ObservationVariables:
         return names
 
     def init_skybright(self, skybright_config):
-        raise NotImplemented("Skybright integration not included in this release")
+        try:
+            from skybright import skybright
+            from configparser import ConfigParser
+
+        except ModuleNotFoundError:
+            print(
+                "ERROR: skybright module not found, please install it from https://github.com/ehneilsen/skybright.git"
+            )
+
+        default_config_path = (
+            f"{os.path.dirname(__file__).rstrip('/')}/../settings/skybright_config.conf"
+        )
+
+        config_path = (
+            default_config_path
+            if skybright_config["config"] == "default"
+            else skybright_config["config"]
+        )
+        skybright_config_file = ConfigParser()
+        skybright_config_file.read(config_path)
+
+        self.skybright = skybright.MoonSkyModel(skybright_config_file)
+
+    def calculate_sky_magnitude(self):
+        if hasattr(self, "skybright"):
+            m0 = self.skybright.m_zen[self.band]
+            nu = 10 ** (-1 * self.clouds / 2.5)
+            fwhm500 = self.calculate_seeing()["fwhm"]
+
+            sky_mag = self.calc_sky(
+                self.time.mjd,
+                self.location.ra,
+                self.location.decl,
+                self.band,
+                moon_crds=astropy.coordinates.get_moon(self.time),
+                moon_elongation=self.calculate_moon_brightness()["moon_elongation"],
+                sun_crds=astropy.coordinates.get_sun(self.time),
+            )
+
+            tau = ((nu * (0.9 / fwhm500)) ** 2) * (10 ** ((sky_mag - m0) / 2.5))
+
+            teff = tau * self.readout_seconds * 0.00001157407 * 86400
+
+            return {
+                "sky_magnitude": np.array(sky_mag),
+                "tau": np.array(tau),
+                "teff": np.array(teff),
+            }
+        else:
+            return {}
