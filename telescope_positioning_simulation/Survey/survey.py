@@ -1,21 +1,19 @@
 """
 Run a simulation, picking up the variables specified in the config file and updating the time and location based on the
 """
-
-from typing import Union
 import numpy as np
-import gymnasium as gym
-
 from telescope_positioning_simulation.Survey.observation_variables import (
     ObservationVariables,
 )
-
 from telescope_positioning_simulation.IO.read_config import ReadConfig
-
+import gymnasium as gym
 
 class Survey(gym.Env):
-    def __init__(self, survey_config: dict = {}, obseravtory_config: dict = {}) -> None:
-
+    def __init__(
+        self,
+        obseravtory_config: dict = {},
+        survey_config: dict = {},
+    ) -> None:
         default_survey = ReadConfig(None, survey=True)()
         survey_config = {**default_survey, **survey_config}
 
