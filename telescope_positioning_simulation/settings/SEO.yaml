@@ -32,7 +32,7 @@ cloud_extinction: 0.0
 shutter_seconds: 0.0
 readout_seconds: 27.0
 
-location : {'n_sites': 10}
+location : {'ra': [0], 'decl': [0]}
 
 # skybright options
 use_skybright: False

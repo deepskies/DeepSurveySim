@@ -91,11 +91,11 @@ class Survey(gym.Env):
                     observation[condition] >= self.stop_config[condition]["value"]
                 )
 
-            stop = stop & stop_condition
+            stop = stop or stop_condition
 
-        return not np.all(stop)
+        return np.any(stop)
 
-    def _reward(self, observation):
+    def _reward(self, observation, info):
         metric = self.reward_config["monitor"]
         reward = observation[metric]
 
@@ -106,8 +106,7 @@ class Survey(gym.Env):
             reward = np.where(
                 reward > self.reward_config["threshold"], reward, self.invalid_penality
             )
-
-        reward = np.where(not observation["valid"], self.invalid_penality, reward)
+        reward = np.where(info["invalid"], self.invalid_penality, reward)
 
         return reward
 
@@ -125,10 +124,14 @@ class Survey(gym.Env):
         return observation, reward, stop, log
 
     def _observation_calculation(self):
-
         observation = {}
         for var_name in self.observatory_variables:
-            observation[var_name] = self.observatory_variables[var_name]()[var_name]
+            observation[var_name] = np.asarray(self.observatory_variables[var_name]()[var_name], dtype=np.float32)
+
+            if isinstance(observation[var_name], np.ndarray) and observation[var_name].ndim == 2:
+
+                observation[var_name] = observation[var_name][0]
+
 
         observation["valid"] = self.validity(observation=observation)
         observation["mjd"] = np.asarray(

@@ -88,6 +88,7 @@ class ObservationVariables:
 
         self.time = self._time(60000)
         self.location = self.default_locations
+
         self.band = "g"
         self.delay = 0
         self.variables = self.observator_mapping()

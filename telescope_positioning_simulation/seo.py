@@ -13,10 +13,10 @@ survey_config = ReadConfig(
         observator_configuration="settings/equatorial_survey.yaml",
         survey=True
     )()
-survey_config['location']  = {'ra': 0, 'decl':0}
+survey_config['location']  = {'ra': [0], 'decl': [0]}
 
 env = Survey(seo_config, survey_config)
-observation = env._observation_calculation()
+observation = env.reset()
 
 stop = False
 while not stop:
@@ -24,7 +24,7 @@ while not stop:
     decl = random.randint(0, 90)
     action = {
         "time": Time.now().mjd,
-        "location": {"ra": ra, "decl": decl},
+        "location": {"ra": [ra], "decl": [decl]},
         "band": "g"
     }
     print("Action",action)
