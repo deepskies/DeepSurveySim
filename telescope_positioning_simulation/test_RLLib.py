@@ -1,4 +1,4 @@
-from Survey.survey import Survey
+from Survey.RLLib_survey import Survey
 from IO.read_config import ReadConfig
 from astropy.time import Time
 import numpy as np
@@ -23,12 +23,12 @@ while not stop:
     ra = random.randint(0, 90)
     decl = random.randint(0, 90)
     action = {
-        "time": Time.now().mjd,
-        "location": {"ra": [ra], "decl": [decl]},
+        "ra": [ra],
+        "decl": [decl],
         "band": "g"
     }
     print("Action",action)
-    observation, reward, stop, log = env.step(action)
+    observation, reward, stop, truncated, log = env.step(action)
     print("Observation",observation)
     print("Reward",reward)
     print("Stop",stop)

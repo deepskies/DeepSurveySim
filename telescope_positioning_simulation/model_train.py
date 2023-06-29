@@ -29,7 +29,7 @@ algo = (
     .build()
 )
 
-for i in range(10):
+for i in range(100):
     result = algo.train()
     print(result)
     print(pretty_print(result))

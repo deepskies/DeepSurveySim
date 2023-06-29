@@ -16,13 +16,15 @@ class Survey(SurveyBase):
 
         self.observation_space = spaces.Dict({
             'airmass': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
-            'alt': spaces.Box(low=-100000, high=100000.0, shape=(1,), dtype=np.float32),
-            'ha': spaces.Box(low=-100000, high=100000.0, shape=(1,), dtype=np.float32),
-            'lst': spaces.Box(low=-100000, high=100000.0, shape=(1,), dtype=np.float32),
-            'moon_airmass': spaces.Box(low=-100000, high=10000.0, shape=(1,), dtype=np.float32),
-            'sun_airmass': spaces.Box(low=-100000, high=100000.0, shape=(1,), dtype=np.float32),
+            'alt': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
+            'ha': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
+            'lst': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
+            'moon_airmass': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
+            'sun_airmass': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
+            #'sky_magnitude': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
+            #'teff': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
         })
-        # TODO: estimated for now using our offline dataset and tuned in order to make it work, to change with the correct ranges
+        # TODO: for now tuned in order to make it work, to change with the correct ranges
 
     def reset(self, *, seed=None, options=None):
         self.timestep = 0

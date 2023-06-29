@@ -38,7 +38,6 @@ class Survey(gym.Env):
         self.save_config = survey_config["save"]
 
         var_dict = self.observator.name_to_function()
-
         self.observatory_variables = {
             key: var_dict[key] for key in survey_config["variables"]
         }
@@ -126,13 +125,21 @@ class Survey(gym.Env):
     def _observation_calculation(self):
         observation = {}
         for var_name in self.observatory_variables:
+            #print("Obs calc",self.observatory_variables[var_name]()[var_name])
             observation[var_name] = np.asarray(self.observatory_variables[var_name]()[var_name], dtype=np.float32)
-
+            # TODO: Added to overcome the well-known issue of [[]] sometimes instead of [], to fix otherwise skybright does not work
             if isinstance(observation[var_name], np.ndarray) and observation[var_name].ndim == 2:
-
                 observation[var_name] = observation[var_name][0]
-
-
+        default_values = {
+            'sky_magnitude': [100000.0],
+            'teff': [-100.0]
+        }
+        nan = False
+        for key, value in observation.items():
+            if isinstance(value, np.ndarray) and np.isnan(value):
+                nan = True
+                observation[key] = np.asarray(default_values.get(key), dtype=np.float32)
+        #print("Nan Found", nan)
         observation["valid"] = self.validity(observation=observation)
         observation["mjd"] = np.asarray(
             [
