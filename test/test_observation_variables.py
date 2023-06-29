@@ -42,8 +42,6 @@ def observations(seo_observatory):
 
     for key in obs.keys():
         obs[key] = obs[key].ravel()
-        print(key)
-        print(obs[key])
     return pd.DataFrame(obs)
 
 
@@ -56,6 +54,7 @@ def test_variable_size(seo_observatory):
     for function in seo_observatory.variables:
         variable_dictionary = function()
         for key in variable_dictionary:
+            print(key, variable_dictionary[key].shape)
             assert variable_dictionary[key].shape == (default_sites, time_size)
 
 
@@ -157,3 +156,15 @@ def test_hour_angle(seo_observatory, observations):
     hadec_separation = observations_hadec_coords.separation(ap_hadec_coords).deg
 
     assert max(hadec_separation) < 0.75
+
+
+def test_init_skybright():
+    config_path = "test/test_files/empty_config.yaml"
+    config = ReadConfig(config_path)()
+    config["use_skybright"] = True
+    SEO = ObservationVariables(config)
+    results = SEO.calculate_sky_magnitude()
+
+    assert "sky_magnitude" in results
+    assert "tau" in results
+    assert "teff" in results

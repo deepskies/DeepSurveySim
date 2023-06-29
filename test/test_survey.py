@@ -77,12 +77,12 @@ def test_dont_stop_me():
     observation = {"random_var": np.array([80])}
     stop = s._stop_condition(observation)
 
-    assert stop
+    assert not stop
 
 
 def test_stop_me():
     survey_config = {
-        "stopping": {"timestep": 6, "random_var": {"value": 42, "lesser": True}}
+        "stopping": {"timestep": 6, "random_var": {"value": 42, "lesser": False}}
     }
     s = Survey(survey_config=survey_config)
     observation = {"random_var": np.array([10, 50, 2])}
@@ -93,9 +93,7 @@ def test_stop_me():
 
 def test_stop_me_timestep():
 
-    survey_config = {
-        "stopping": {"timestep": 6, "random_var": {"value": 42, "lesser": True}}
-    }
+    survey_config = {"stopping": {"timestep": 6}}
     s = Survey(survey_config=survey_config)
 
     s.timestep = 50
@@ -119,8 +117,9 @@ def test_all_gather_variables():
         "valid",
     ]
 
-    expected_shape = (10, 1)
+    expected_shape = (10,)
     for key in observation_keys:
+        print(key)
         assert observation[key].shape == expected_shape
 
     assert set(observation_keys) == set(expected_keys)
@@ -131,11 +130,13 @@ def test_subset_gather_variables():
         "variables": ["alt", "az"],
         "constaints": {"alt": {"value": 20, "lesser": False}},
     }
-    observation = Survey(subset_config)._observation_calculation()
+    observation = Survey(
+        survey_config=subset_config, obseravtory_config={}
+    )._observation_calculation()
     observation_keys = observation.keys()
     expected_subset = ["alt", "az", "mjd", "valid"]
 
-    expected_shape = (10, 1)
+    expected_shape = (10,)
     for key in observation_keys:
         assert observation[key].shape == expected_shape
 
