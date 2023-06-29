@@ -8,18 +8,34 @@ import datetime as dt
 
 
 class SaveSimulation:
-    def __init__(self, survey_instance, survey_results) -> None:
+    """
+    Save a run survey to a json (survey results) and the config file used to generate it (yaml)
 
+    Args:
+        survey_instance (Survey.Survey): Survey used to generate the simulation
+        survey_results (dict): Run survey results - format of <mjd>:{variable:[value]}
+
+    
+    Examples:
+
+        >>> survey = Survey.Survey(obseravtory_config, survey_config)
+            survey_results = survey()
+            IO.SaveSimulation(survey, survey_results)()
+    """
+    def __init__(self, survey_instance, survey_results) -> None:
         assert survey_instance.save_config is not None
         self.survey_instance = survey_instance
         self.survey_results = survey_results
 
-        save_id = SaveSimulation.generate_run_id()
+        save_id = SaveSimulation._generate_run_id()
         self.save_path = f"{os.path.abspath(survey_instance.save_config.rstrip('/'))}/survey_{save_id}"
 
         os.makedirs(self.save_path)
 
     def save_results(self):
+        """
+        Save results to the path of "/survey_{id}/survey_results.json"
+        """
         result_path = f"{self.save_path}/survey_results.json"
 
         format_result = {
@@ -38,6 +54,9 @@ class SaveSimulation:
             json.dump(format_result, f)
 
     def save_config(self):
+        """
+        Save results to the path of "/survey_{id}/survey_results.json" 
+        """
         formated_config = {
             **self.survey_instance.survey_config,
             **self.survey_instance.telescope_config,
@@ -49,7 +68,7 @@ class SaveSimulation:
             yaml.safe_dump(formated_config, f)
 
     @staticmethod
-    def generate_run_id(random_digits=4):
+    def _generate_run_id(random_digits=4):
         _rint = np.random.randint(10**random_digits)
         date_string = (
             str(dt.datetime.now())
