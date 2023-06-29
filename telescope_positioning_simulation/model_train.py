@@ -7,7 +7,6 @@ import ray
 from Survey.RLLib_survey import Survey
 from IO.read_config import ReadConfig
 from ray.tune.registry import register_env
-from ray.tune.logger import TBXLoggerCallback
 from ray import air, tune
 import argparse
 import config
@@ -88,7 +87,9 @@ if __name__ == "__main__":
         )
         results = tuner.fit()
         best_result = results.get_best_result(metric="episode_reward_mean", mode="max")
+        print("Best result", best_result)
         best_checkpoint = best_result.checkpoint
+        print("Best checkpoint", best_checkpoint)
     elif params.mode == "test":
         CHECKPOINT_PATH = ""
         env = env_creator({})
