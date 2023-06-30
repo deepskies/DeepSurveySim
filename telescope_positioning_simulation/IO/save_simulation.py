@@ -15,13 +15,14 @@ class SaveSimulation:
         survey_instance (Survey.Survey): Survey used to generate the simulation
         survey_results (dict): Run survey results - format of <mjd>:{variable:[value]}
 
-    
+
     Examples:
 
         >>> survey = Survey.Survey(obseravtory_config, survey_config)
             survey_results = survey()
             IO.SaveSimulation(survey, survey_results)()
     """
+
     def __init__(self, survey_instance, survey_results) -> None:
         assert survey_instance.save_config is not None
         self.survey_instance = survey_instance
@@ -55,7 +56,7 @@ class SaveSimulation:
 
     def save_config(self):
         """
-        Save results to the path of "/survey_{id}/survey_results.json" 
+        Save config of run to the path of "/survey_{id}/run_config.yaml"
         """
         formated_config = {
             **self.survey_instance.survey_config,
