@@ -1,7 +1,6 @@
 """
 Run a simulation, picking up the variables specified in the config file and updating the time and location based on the
 """
-
 import numpy as np
 from gymnasium import spaces
 from telescope_positioning_simulation.Survey.survey import Survey as SurveyBase
@@ -21,8 +20,8 @@ class Survey(SurveyBase):
             'lst': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
             'moon_airmass': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
             'sun_airmass': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
-            #'sky_magnitude': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
-            #'teff': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
+            'sky_magnitude': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
+            'teff': spaces.Box(low=-100000, high=100000, shape=(1,), dtype=np.float32),
         })
         # TODO: for now tuned in order to make it work, to change with the correct ranges
 
@@ -47,12 +46,14 @@ class Survey(SurveyBase):
         action["time"] = self.previous_mjd
         #print("Step",action)
         new_action = {"time": action["time"], "location": {"ra": action["ra"], "decl": action["decl"]}}
+        #print("New_action", new_action)
         self.observator.update(**new_action)
         observation = self._observation_calculation()
         info = {}
         info["invalid"] = not self.validity(observation)
         info["mjd"] = observation["mjd"]
         observation = {key: observation[key] for key in self.observatory_variables }
+        #print("Obs", observation)
         reward = self._reward(observation, info)
         self.timestep += 1
         self.previous_mjd = info["mjd"]

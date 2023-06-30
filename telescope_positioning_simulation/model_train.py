@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--algorithm", required=False, default=config.experiment_config["DEFAULT_TRAINING_ALGORITHM"],
                         help="Algorithm to train", choices=algorithm_config.keys())
     parser.add_argument("-m", "--mode", required=False,
-                        default="tune", help="Execution mode")
+                        default="train", help="Execution mode")
     parser.add_argument("-f", "--file", required=False, help="Checkpoint file to execute in test mode")
     params = parser.parse_args()
     if params.mode == "train":

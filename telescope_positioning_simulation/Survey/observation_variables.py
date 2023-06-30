@@ -87,6 +87,8 @@ class ObservationVariables:
         )
 
         self.time = self._time(60000)
+        if self.time.ndim == 1:
+            self.time = self.time[0]
         self.location = self.default_locations
 
         self.band = "g"
@@ -137,6 +139,8 @@ class ObservationVariables:
             self.delay = self._delay_time(self.location, band)
 
         self.time = self._time(time)
+        if self.time.ndim == 1:
+            self.time = self.time[0]
         self.band = band if band is not None else self.band
         self.location = self.location if location is None else location
 
@@ -351,7 +355,6 @@ class ObservationVariables:
             m0 = self.skybright.m_zen[self.band]
             nu = 10 ** (-1 * self.clouds / 2.5)
             fwhm500 = self.calculate_seeing()["fwhm"]
-
             sky_mag = np.asarray(
                 [
                     self.skybright(
