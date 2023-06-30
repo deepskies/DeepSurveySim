@@ -48,9 +48,18 @@ class ObservationVariables:
             Default: False
 
     Examples:
-        >>>
+        >>> observer = ObservationVariables(configuration)
+            observer.update({"time": [60125], location:{"ra":[20, 35]}, "decl":[0, 0]})
+            ## Calculate moon location for 6/30/2023 at 20*, 35* along the equator.
+            moon_location = observer.calculate_moon_location()
+            `{"moon_ra":(20,20), "moon_decl":(20,20)}`
 
-        >>>
+        >>> observer = ObservationVariables(configuration)
+            observer.update({"time": [60125], location:{"ra":[20, 35]}, "decl":[0, 0]})
+            # Calculate all variables
+            all_stats = {}
+            for function in observator.observation_variables():
+                all_stats |= function()
 
     """
 
@@ -475,7 +484,7 @@ class ObservationVariables:
         else:
             return {}
 
-    def _observator_mapping(self):
+    def observator_mapping(self):
 
         return [
             self.calculate_sun_location,
@@ -502,7 +511,7 @@ class ObservationVariables:
             dict: map between variable names and their functions.
         """
         names = {}
-        for function in self._observator_mapping():
+        for function in self.observator_mapping():
             function_result = function()
             function_map = {name: function for name in function_result.keys()}
             names = {**function_map, **names}
