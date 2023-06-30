@@ -1,3 +1,9 @@
+import sys
+
+sys.path.append("..")
+
+import telescope_positioning_simulation
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -6,23 +12,32 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'TelescopePositioningSimulator'
-copyright = '2023, M. Voetberg'
-author = 'M. Voetberg'
-release = '0.0.1'
+project = "TelescopePositioningSimulator"
+copyright = "2023, M. Voetberg"
+author = "M. Voetberg"
+release = "0.0.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = []
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
+]
+napoleon_use_param = True
+autodoc_default_options = {
+    "members": True,
+}
+autodoc_typehints = "description"
 
-templates_path = ['_templates']
-exclude_patterns = []
-
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
-html_static_path = ['_static']
+html_theme = "alabaster"
+html_static_path = ["_static"]
