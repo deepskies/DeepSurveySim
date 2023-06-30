@@ -55,7 +55,7 @@ class ObservationVariables:
             `{"moon_ra":(20,20), "moon_decl":(20,20)}`
 
         >>> observer = ObservationVariables(configuration)
-            observer.update({"time": [60125], location:{"ra":[20, 35]}, "decl":[0, 0]})
+            observer.update(time = [60125], location = {"ra":[20, 35]}, "decl":[0, 0]})
             # Calculate all variables
             all_stats = {}
             for function in observator.observation_variables():
