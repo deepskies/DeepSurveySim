@@ -11,7 +11,7 @@ Welcome to TelescopePositioningSimulator's documentation!
 
    io
    survey
-   configuration
+   configurations
 
 
 Indices and tables
