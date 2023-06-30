@@ -30,20 +30,15 @@ class Survey:
 
     def __init__(
         self,
-        obseravtory_config: dict = {},
-        survey_config: dict = {},
+        observatory_config: dict,
+        survey_config: dict,
     ) -> None:
-        default_survey = ReadConfig(None, survey=True)()
-        survey_config = {**default_survey, **survey_config}
-
-        default_obs = ReadConfig(None, survey=False)()
-        obseravtory_config = {**default_obs, **obseravtory_config}
 
         self.observator = ObservationVariables(
-            observator_configuration=obseravtory_config
+            observator_configuration=observatory_config
         )
 
-        self.telescope_config = obseravtory_config
+        self.telescope_config = observatory_config
         self.survey_config = survey_config
 
         self.reward_config = survey_config["reward"]

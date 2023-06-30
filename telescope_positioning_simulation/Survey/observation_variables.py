@@ -209,7 +209,7 @@ class ObservationVariables:
         return airmass
 
     def _time(self, time):
-        return astropy.time.Time(np.asarray(time) + self.delay, format="mjd")
+        return astropy.time.Time(np.asarray(time), format="mjd")
 
     def _alt_az(self, coordinates):
         site = astropy.coordinates.EarthLocation.from_geodetic(
