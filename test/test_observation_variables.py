@@ -27,7 +27,7 @@ def observations(seo_observatory):
     seo_observatory.update(times)
 
     obs = {}
-    for function in seo_observatory.variables:
+    for function in seo_observatory.observator_mapping():
         obs |= function()
 
     obs["times"] = np.asarray(
@@ -51,7 +51,7 @@ def test_variable_size(seo_observatory):
     times = np.random.default_rng().uniform(low=55000, high=70000, size=time_size)
     seo_observatory.update(times)
 
-    for function in seo_observatory.variables:
+    for function in seo_observatory.observator_mapping():
         variable_dictionary = function()
         for key in variable_dictionary:
             print(key, variable_dictionary[key].shape)

@@ -1,9 +1,3 @@
-"""
-Calculate each variable needed for he simulation of the sky.
-Each function takes the time as an input, and calculates each step at that time.
-
-Requires set up of the observation location from a yaml file or a dictionary.
-"""
 from typing import Union
 import astroplan
 import astropy
@@ -11,55 +5,66 @@ import numpy as np
 import os
 
 import numexpr
-from collections.abc import Iterable
 
 
 class ObservationVariables:
+    """
+    Calculate the parameters for a specific observation
+
+    Run the program by
+        specifying the init params,
+        updating the location, band, and time with ObservationVariables.update(),
+        calculating the requested variables
+        Possible calculations are seen with ObservationVariables.variables
+
+    All variables are returned with the dimensions (n observation times, n sites) in a dictionary labeled with their variable names
+
+    Args:
+        observator_configuration (dict): Describes the way the observatory is set up. This contains:
+
+        obs_latitude_degrees (float) (required): Degree location
+        obs_logitude_degrees (float) (required): Degree location
+        obs_elevation_meters (float) (required): Height above sea level
+        bands (dict): String indication of the band, and its associated wavelength.
+            Default {
+                    "u": 380.0,
+                    "g": 475.0,
+                    "r": 635.0,
+                    "i": 775.0,
+                    "z": 925.0,
+                    "Y": 1000.0,
+                        }
+        seeing (float) : [0, 3]; indicates the clarity of the sky.
+            3 is totally obscured, 0 is totally clear (as if observing through a vacuum). Default 0.9
+        optics_fwhm (float): Default 0.45
+        location (dict) :
+            dictionary containing either 'n_sites'
+                (Number of sequentically generated sites spanning the whole sky)
+            or paired "ra" and "decl", containing lists of locations.
+            Default: 10 sites.
+        use_skybright (bool):
+            use the skybright program to add additional variables to the program
+            Requires an outside download of PalPy (Not included with this distirbution)
+            Default: False
+
+    Examples:
+        >>> observer = ObservationVariables(configuration)
+            observer.update({"time": [60125], location:{"ra":[20, 35]}, "decl":[0, 0]})
+            ## Calculate moon location for 6/30/2023 at 20*, 35* along the equator.
+            moon_location = observer.calculate_moon_location()
+            `{"moon_ra":(20,20), "moon_decl":(20,20)}`
+
+        >>> observer = ObservationVariables(configuration)
+            observer.update(time = [60125], location = {"ra":[20, 35]}, "decl":[0, 0]})
+            # Calculate all variables
+            all_stats = {}
+            for function in observator.observation_variables():
+                all_stats |= function()
+
+    """
+
     def __init__(self, observator_configuration: dict):
-        """
-        Calculate the parameters for a specific observation
 
-        Args:
-            observator_configuration (dict): Describes the way the observatory is set up.
-            parameters:
-                obs_latitude_degrees (float) (required): Degree location
-                obs_logitude_degrees (float) (required): Degree location
-                obs_elevation_meters (float) (required): Height above sea level
-
-                bands (dict): String indication of the band, and its associated wavelength.
-                    Default {
-                            "u": 380.0,
-                            "g": 475.0,
-                            "r": 635.0,
-                            "i": 775.0,
-                            "z": 925.0,
-                            "Y": 1000.0,
-                                }
-                seeing (float) : [0, 3]; indicates the clarity of the sky.
-                    3 is totally obscured, 0 is totally clear (as if observing through a vacuum). Default 0.9
-                optics_fwhm (float): Default 0.45
-
-                location (dict) :
-                    dictionary containing either 'n_sites'
-                        (Number of sequentically generated sites spanning the whole sky)
-                    or paired "ra" and "decl", containing lists of locations.
-                    Default: 10 sites.
-
-                use_skybright (bool):
-                    use the skybright program to add additional variables to the program
-                    Requires an outside download of PalPy (Not included with this distirbution)
-                    Default: False
-
-            Run the program by
-                specifying the init params,
-                updating the location, band, and time with ObservationVariables.update(),
-                calculating the requested variables
-
-                Possible calculations are seen with ObservationVariables.variables
-
-                All variables are returned with the dimensions (n observation sites, n sites)
-                    in a dictionary labeled with their variable names
-        """
         if observator_configuration["use_skybright"]:
             self._init_skybright(observator_configuration["skybright"])
 
@@ -85,12 +90,11 @@ class ObservationVariables:
         self.default_locations = self._default_locations(
             **observator_configuration["location"]
         )
+        self.delay = 0
 
         self.time = self._time(60000)
         self.location = self.default_locations
         self.band = "g"
-        self.delay = 0
-        self.variables = self.observator_mapping()
 
         self.slew_rate = observator_configuration["slew_expr"]
         self.band_change_rate = observator_configuration["filter_change_rate"]
@@ -126,12 +130,23 @@ class ObservationVariables:
         location: Union[dict, None] = None,
         band: Union[str, None] = None,
     ):
+        """
+        Move the simulation forward to the next site.
+        Updates the time (ObservationVariables.time), the delay between pervious time and new time, observation site (ObservationVariables.location), and optial filter band (ObservationVariables.band)
+
+        Args:
+            time (Union[float, list[float]]): Time to move forward to, in Mean Julian Date
+            location (Union[dict, None], optional): Location (paired ra/delc) in degrees to move the telescope pointing. Will not change the pointing if location not specificed. Defaults to None.
+            band (Union[str, None], optional): Optical filter to use for observation. Will not be changed if not specified. Select from bands specified by ObservationVariables.band_wavelengths. Defaults to None.
+        """
+
         if location is not None:
             assert "ra" in location.keys()
             assert "decl" in location.keys()
 
             location = self._sky_coordinates(location["ra"], location["decl"])
             self.delay = self._delay_time(location, band)
+
         else:
             self.delay = self._delay_time(self.location, band)
 
@@ -227,11 +242,23 @@ class ObservationVariables:
         )
 
     def calculate_lst(self):
+        """
+        Calculate the current pointing local sidereal time
+        LST - https://en.wikipedia.org/wiki/Sidereal_time
+
+        Returns:
+            dict[array]: Local Sideral Time, shape (n observation times, n sites)
+        """
         lst = self._local_sidereal_time()
         return {"lst": np.asarray([lst for _ in range(len(self.location))])}
 
     def calculate_sun_location(self):
+        """
+        Calculate the position of the sun in Right Ascension/Declination (degrees)
 
+        Returns:
+            dict[array]: Dictionary of RA/Decl of the Sun, shape (n observation times, n sites)
+        """
         sun_coordinates = astropy.coordinates.get_sun(self.time)
 
         sun_ra = sun_coordinates.ra.to_value(self.degree)
@@ -243,13 +270,25 @@ class ObservationVariables:
         }
 
     def calculate_sun_ha(self):
+        """
+        Calculate the Sun's Hour Angle
+        https://en.wikipedia.org/wiki/Hour_angle
 
+        Returns:
+            dict[array]: Sun HA, shape (n observation times, n sites)
+        """
         sun_coordinates = astropy.coordinates.get_sun(self.time)
         sun_ha = self._ha(sun_coordinates)
         return {"sun_ha": np.asarray([sun_ha for _ in range(len(self.location))])}
 
     def calculate_sun_airmass(self):
+        """
+        Calculate the Airmass of the sun relative to the current location.
+        https://en.wikipedia.org/wiki/Air_mass_(astronomy)
 
+        Returns:
+            dict[array]: Sun Airmass, shape (n observation times, n sites)
+        """
         sun_coordinates = astropy.coordinates.get_sun(self.time)
         sun_airmass = self._airmass(sun_coordinates)
 
@@ -261,14 +300,30 @@ class ObservationVariables:
         moon_location = astropy.coordinates.get_moon(self.time)
         moon_ra = moon_location.ra.to_value(self.degree)
         moon_decl = moon_location.dec.to_value(self.degree)
+        """ Calculate the moon position at current time
 
+        Returns:
+            dict[array]: Moon location in degrees (Right Ascension/Declination), shape (n observation times, n sites)
+        """
         return {
             "moon_ra": np.asarray([moon_ra for _ in range(len(self.location))]),
             "moon_decl": np.asarray([moon_decl for _ in range(len(self.location))]),
         }
 
     def calculate_moon_brightness(self):
+        """
+        Calculate the brightness of the moon at a the current time, as observated from the current observatory
 
+        Returned dictionary contains
+            - Moon Elongation (seperation from the sun, in degrees)
+            - Moon Phase (quarters of the moon illumated)
+            - Moon Illumation (% of moon face illumated)
+            - Moon V Magnitude: Visible magnitude approximation as defined by Allen's Astrophysical Quantities
+            - Moon Seperation: Angular distance (degrees) between point and the moon
+
+        Returns:
+            dict[array]: Array of above moon brightness variables, shape (n observation times, n sites)
+        """
         moon_location = astropy.coordinates.get_moon(self.time)
 
         moon_phase = astroplan.moon.moon_phase_angle(self.time).to_value(self.degree)
@@ -305,11 +360,25 @@ class ObservationVariables:
         }
 
     def calculate_moon_ha(self):
+        """ "
+        Calculate the hour angle of the moon at the given point in time
+        https://en.wikipedia.org/wiki/Hour_angle
+
+        Returns:
+            dict[array]: Moon HA shape (n observation times, n sites)
+        """
         moon_location = astropy.coordinates.get_moon(self.time)
         moon_ha = self._ha(moon_location)
         return {"moon_ha": np.asarray([moon_ha for _ in range(len(self.location))])}
 
     def calculate_moon_airmass(self):
+        """ "
+        Calculate the airmass of the moon at the given point in time
+        https://en.wikipedia.org/wiki/Air_mass_(astronomy)
+
+        Returns:
+            dict[array]: Moon Airmass, shape (n observation times, n sites)
+        """
         moon_location = astropy.coordinates.get_moon(self.time)
         moon_airmass = self._airmass(moon_location)
         return {
@@ -317,6 +386,12 @@ class ObservationVariables:
         }
 
     def calculate_observation_angles(self):
+        """
+        Calculate the altitude and azumultial angle of the current pointing, in degrees
+
+        Returns:
+            dict[array]: Azimuthal angle (az), Altitude (alt) in degrees, shape (n observation times, n sites)
+        """
         hzcrds = [self._alt_az(location) for location in self.location]
         alt = np.asarray([hzcrd.alt.degree for hzcrd in hzcrds])
         az = np.asarray([hzcrd.az.degree for hzcrd in hzcrds])
@@ -327,9 +402,22 @@ class ObservationVariables:
         }
 
     def calculate_observation_ha(self):
+        """
+        Calcate the current point's Hour Angle
+        https://en.wikipedia.org/wiki/Hour_angle
+
+        Returns:
+            dict[array]: Pointing HA, shape (n observation times, n sites)
+        """
         return {"ha": np.asarray([self._ha(location) for location in self.location])}
 
     def calculate_observation_airmass(self):
+        """
+        Calculate the current pointing's airmass
+        https://en.wikipedia.org/wiki/Air_mass_(astronomy)
+        Returns:
+            dict[array]: Pointing Airmass,  shape (n observation times, n sites)
+        """
         return {
             "airmass": np.asarray(
                 [self._airmass(location) for location in self.location]
@@ -337,6 +425,14 @@ class ObservationVariables:
         }
 
     def calculate_seeing(self):
+        """
+        Calculate the optical visibality of the observation with the current filter/band
+        fwhw defintion - https://en.wikipedia.org/wiki/Full_width_at_half_maximum
+
+        Returns:
+            dict[array]: Dictionary of Transverse seeing (pt_seeing), Seeing through the current filter (band_seeing), Full width at half maximum (fwhw) for the light signal, shape (n observation times, n sites)
+
+        """
         airmass = self.calculate_observation_airmass()["airmass"]
         pt_seeing = self.seeing * airmass**0.6
         wavelength = self.band_wavelengths[self.band]
@@ -346,6 +442,13 @@ class ObservationVariables:
         return {"pt_seeing": pt_seeing, "band_seeing": band_seeing, "fwhm": fwhm}
 
     def calculate_sky_magnitude(self):
+        """
+        If skybright is both installed and set up, calculate the sky brightness/magnitude of brightness
+        Please view  https://github.com/ehneilsen/skybright/blob/b0e2d7e6e25131393ee76ce334ce1df1521e3659/skybright/skybright.py#L173 for details
+
+        Returns:
+            dict[array]: Dictionary of "sky magnitude", "tau", "teff", shape (n observation times, n sites)
+        """
         if hasattr(self, "skybright"):
             m0 = self.skybright.m_zen[self.band]
             nu = 10 ** (-1 * self.clouds / 2.5)
@@ -382,6 +485,7 @@ class ObservationVariables:
             return {}
 
     def observator_mapping(self):
+
         return [
             self.calculate_sun_location,
             self.calculate_sun_airmass,
@@ -399,6 +503,13 @@ class ObservationVariables:
         ]
 
     def name_to_function(self):
+        """
+        Map between the name of the variable and the function used to produce it.
+        Call this to find what variables are avaliable for your instance of ObservationVaraibles.
+
+        Returns:
+            dict: map between variable names and their functions.
+        """
         names = {}
         for function in self.observator_mapping():
             function_result = function()
