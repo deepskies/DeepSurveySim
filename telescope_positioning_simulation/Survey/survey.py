@@ -1,8 +1,3 @@
-"""
-Run a simulation, picking up the variables specified in the config file and updating the time and location based on the
-"""
-
-from typing import Union
 import numpy as np
 
 from telescope_positioning_simulation.Survey.observation_variables import (
@@ -13,22 +8,37 @@ from telescope_positioning_simulation.IO.read_config import ReadConfig
 
 
 class Survey:
+    """
+    Run a survey in sequence, selecting new sites to observe and few the assocaited variables
+
+        Args:
+            obseravtory_config (dict): Setup parameters for Survey.ObservationVariables, the telescope configuration, as read by IO.ReadConfig
+            survey_config (dict): Parameters for the survey, including the stopping conditions, the validity conditions, the variables to collect, as read by IO.ReadConfig
+
+        Examples:
+            >>> survey = Survey(observatory_config, survey_config)
+                action_generator = ActionGenerator() # Attributary function to produce time, location pairs
+                for step in range(10):
+                    action_time, action_location = action_generator()
+                    update_action = {"time":[action_time], "location":{"ra":[action_location["ra"]], "decl":[action_location["decl"]]}}
+                    observation, reward, stop, log = survey.step(update_action)
+
+            >>> survey = Survey(observatory_config, survey_config)
+                # Run without changing the location, only stepping time forward
+                survey_results = survey()
+    """
+
     def __init__(
         self,
-        obseravtory_config: dict = {},
-        survey_config: dict = {},
+        observatory_config: dict,
+        survey_config: dict,
     ) -> None:
-        default_survey = ReadConfig(None, survey=True)()
-        survey_config = {**default_survey, **survey_config}
-
-        default_obs = ReadConfig(None, survey=False)()
-        obseravtory_config = {**default_obs, **obseravtory_config}
 
         self.observator = ObservationVariables(
-            observator_configuration=obseravtory_config
+            observator_configuration=observatory_config
         )
 
-        self.telescope_config = obseravtory_config
+        self.telescope_config = observatory_config
         self.survey_config = survey_config
 
         self.reward_config = survey_config["reward"]
@@ -56,11 +66,12 @@ class Survey:
             return self.start_time
 
     def reset(self):
+        """Return the observer to its inital position, the time to the start time, and the timestep to 0."""
         self.observator.update(time=0, band="g")
         self.timestep = 0
         self.time = self._start_time()
 
-    def validity(self, observation):
+    def _validity(self, observation):
         valid = True
 
         for condition in self.validity_config:
@@ -117,7 +128,15 @@ class Survey:
         return reward
 
     def step(self, action: dict):
+        """
+        Move the observator forward with one action and add the reward and stop condition to the returned observation.
 
+        Args:
+            action (dict): Dictionary containing "time" (array in units Mean Julian Date) "location"(dict with ra, decl, in degrees as arrays) (optional), "band" (str of the represention of the optical filter) (optional)
+
+        Returns:
+            Tuple : observation (dict, containing survey_config["variables"], vality, Time (in mjd)), reward (array), stop (array), log (dictionary)
+        """
         self.observator.update(**action)
         observation = self._observation_calculation()
         reward = self._reward(observation)
@@ -135,7 +154,7 @@ class Survey:
         for var_name in self.observatory_variables:
             observation[var_name] = self.observatory_variables[var_name]()[var_name]
 
-        observation["valid"] = self.validity(observation=observation)
+        observation["valid"] = self._validity(observation=observation)
         observation["mjd"] = np.asarray(
             [
                 (self.observator.time.mjd + self.observator.delay).mean()

@@ -18,7 +18,7 @@ def default_survey():
 
     survey = Survey(
         survey_config=default_survey_config,
-        obseravtory_config=default_observatory_config,
+        observatory_config=default_observatory_config,
     )
 
     return survey
@@ -64,7 +64,7 @@ def test_save_config_file(default_survey):
 
 
 def test_id_random():
-    id_1 = SaveSimulation.generate_run_id()
-    id_2 = SaveSimulation.generate_run_id()
+    id_1 = SaveSimulation._generate_run_id()
+    id_2 = SaveSimulation._generate_run_id()
 
     assert id_1 != id_2

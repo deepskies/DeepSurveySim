@@ -6,7 +6,7 @@ authors = ["voetberg <magpie127@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.8,<4.0"
 numpy = "^1.24.2"
 pandas = "^1.5.3"
 astroplan = "^0.8"
@@ -15,9 +15,11 @@ numexpr = "^2.8.4"
 skybright = {git = "https://github.com/ehneilsen/skybright.git"}
 configparser = "^5.3.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest-cov = "^4.0.0"
 pre-commit = "^3.3.2"
+sphinx = "^7.0.1"
+sphinx-autodoc-typehints = "^1.23.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
