@@ -168,3 +168,33 @@ def test_init_skybright():
     assert "sky_magnitude" in results
     assert "tau" in results
     assert "teff" in results
+
+
+def test_nudge_large_change():
+    config = ReadConfig(config_path=None)()
+    config["max_position_fuzz"] = {"decl": 0.5, "ra": 0.5}
+    config["location"] = {"ra": [0], "decl": [0]}
+    SEO = ObservationVariables(config)
+
+    new_position = {"ra": [50], "decl": [50]}
+    SEO.update(time="", location=new_position)
+
+    assert pytest.approx(new_position["ra"], SEO.location["ra"], 2)
+    assert pytest.approx(new_position["decl"], SEO.location["decl"], 2)
+
+    assert pytest.approx(abs(new_position["ra"] - SEO.location["ra"]), 0.5, 0.01)
+    assert pytest.approx(abs(new_position["decl"] - SEO.location["decl"]), 0.5, 0.01)
+
+
+def test_nudge_small_change():
+
+    config = ReadConfig(config_path=None)()
+    config["max_position_fuzz"] = {"decl": 0.5, "ra": 0.5}
+    config["location"] = {"ra": [0], "decl": [0]}
+    SEO = ObservationVariables(config)
+
+    new_position = {"ra": [0], "decl": [1]}
+    SEO.update(time="", location=new_position)
+
+    assert pytest.approx(new_position["ra"], SEO.location["ra"], 0.00001)
+    assert pytest.approx(new_position["decl"], SEO.location["decl"], 0.0001)
