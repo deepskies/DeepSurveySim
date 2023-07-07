@@ -10,8 +10,6 @@ from ray.tune.registry import register_env
 from ray import air, tune
 import argparse
 import config
-from ray.rllib.algorithms.algorithm import Algorithm
-import os
 try:
     import gymnasium as gym
     gymnasium = True
@@ -49,8 +47,8 @@ if __name__ == "__main__":
     parser.add_argument("--cuda", default=0, type=int, required=False, help="Enable cuda with a number of GPUs")  # GPU support
     parser.add_argument("-nrw", "--num_rollout_workers", default=1, type=int, required=False,
                         help="Number of rollout workers")
-    parser.add_argument("-ni","--num_iterations", default=config.experiment_config["DEFAULT_TRAINING_ITERATIONS"], type=int, required=False,
-                        help="Number of iterations to train algorithm")
+    parser.add_argument("-ni","--num_iterations", default=config.experiment_config["DEFAULT_TRAINING_TEST_ITERATIONS"], type=int, required=False,
+                        help="Number of iterations to train/test algorithm")
     parser.add_argument("-cp", "--checkpoint_period", required=False, type=int,
                         default=10, help="Checkpoint saving period")
     parser.add_argument("-a", "--algorithm", required=False, default=config.experiment_config["DEFAULT_TRAINING_ALGORITHM"],
@@ -77,11 +75,13 @@ if __name__ == "__main__":
         alg_config = alg_config.environment(env="my_env")
         alg_config = alg_config.rollouts(num_rollout_workers=params.num_rollout_workers)
         alg_config = alg_config.resources(num_gpus=params.cuda)
+        stopping_criteria = {"training_iteration": params.num_iterations, "episode_reward_mean": config.experiment_config["STOP_EPISODE_REWARD_MEAN"]}
+
         tuner = tune.Tuner(
             params.algorithm,
             run_config=air.RunConfig(
-                stop={"episode_reward_mean": config.experiment_config["STOP_EPISODE_REWARD_MEAN"]},
-                storage_path="./results", name="test_experiment"
+                stop=stopping_criteria,
+                storage_path="./results", name="test_experiment_3"
             ),
             param_space=alg_config,
         )
@@ -90,26 +90,5 @@ if __name__ == "__main__":
         print("Best result", best_result)
         best_checkpoint = best_result.checkpoint
         print("Best checkpoint", best_checkpoint)
-    elif params.mode == "test":
-        CHECKPOINT_PATH = ""
-        env = env_creator({})
-        algo = Algorithm.from_checkpoint(os.path.join(CHECKPOINT_PATH, params.file))
-        algo = PPOConfig().environment(env=env).build()
-        print("Weights", algo.get_policy().get_weights())
-        episode_reward = 0
-        terminated = truncated = False
-        if gymnasium:
-            obs, info = env.reset()
-        else:
-            obs = env.reset()
-        print("Obs", obs)
-        while not terminated and not truncated:
-            action = algo.compute_single_action(obs)
-            print("Action", action)
-            if gymnasium:
-                obs, reward, terminated, truncated, info = env.step(action)
-            else:
-                obs, reward, terminated, info = env.step(action)
-            print("Obs", obs)
-            print("Reward", reward)
-            episode_reward += reward
+
+
