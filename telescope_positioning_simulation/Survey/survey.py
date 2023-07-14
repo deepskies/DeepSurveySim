@@ -132,7 +132,7 @@ class Survey(gym.Env):
                 observation[var_name] = observation[var_name][0]
         default_values = {
             'sky_magnitude': [100000.0],
-            'teff': [-100.0]
+            'teff': [-1.0]
         }
         nan = False
         for key, value in observation.items():

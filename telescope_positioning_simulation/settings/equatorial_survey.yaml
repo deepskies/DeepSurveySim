@@ -5,7 +5,7 @@ timestep_size: 300
 start_time: "random"
 
 # How much the reward is for an invalid action
-invalid_penality: -100
+invalid_penality: -1
 
 # What is used to decide reward
 reward: {"monitor": "teff", "min": False}
@@ -15,7 +15,7 @@ reward: {"monitor": "teff", "min": False}
 constaints: {}
 
 # The stopping condition (s)
-stopping: {"timestep": 400}
+stopping: {"timestep": 250}
 
 save: "./equatorial_survey/"
 
