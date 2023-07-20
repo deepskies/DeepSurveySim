@@ -90,9 +90,12 @@ class ObservationVariables:
         self.default_locations = self._default_locations(
             **observator_configuration["location"]
         )
-        self.delay = 0
+        if "max_position_fuzz" in observator_configuration.keys():
+            self.position_fuzz = observator_configuration["max_position_fuzz"]
+        else:
+            self.position_fuzz = {"ra": 0, "decl": 0}
 
-        self.time = self._time(60000)
+        self.time = None
         self.location = self.default_locations
         self.band = "g"
 
@@ -139,20 +142,23 @@ class ObservationVariables:
             location (Union[dict, None], optional): Location (paired ra/delc) in degrees to move the telescope pointing. Will not change the pointing if location not specificed. Defaults to None.
             band (Union[str, None], optional): Optical filter to use for observation. Will not be changed if not specified. Select from bands specified by ObservationVariables.band_wavelengths. Defaults to None.
         """
-
         if location is not None:
             assert "ra" in location.keys()
             assert "decl" in location.keys()
 
-            location = self._sky_coordinates(location["ra"], location["decl"])
-            self.delay = self._delay_time(location, band)
+            location = self._update_location(location["ra"], location["decl"])
+            delay = self._delay_time(location, band)
 
         else:
-            self.delay = self._delay_time(self.location, band)
+            location = self.location
+            if (band is not None) and (time is not None):
+                delay = self._delay_time(self.location, band)
+            else:
+                delay = 0
 
-        self.time = self._time(time)
+        self.time = self._time(time + delay)
         self.band = band if band is not None else self.band
-        self.location = self.location if location is None else location
+        self.location = location
 
     def _angular_distance(self, location):
         ra1, ra2 = np.array(
@@ -166,6 +172,8 @@ class ObservationVariables:
             np.sin(decl1) * np.sin(decl2)
             + np.cos(decl1) * np.cos(decl2) * np.cos(abs(ra1 - ra2))
         )
+        seperation = np.where(seperation == np.nan, seperation, 0)
+
         return seperation
 
     def _delay_time(self, location, band):
@@ -177,6 +185,21 @@ class ObservationVariables:
 
         delay_days = delay * 0.00001157407
         return delay_days
+
+    def _update_location(self, ra, decl):
+        def nudge_factor(var_difference, position_element):
+            scale = self.position_fuzz[position_element]
+            midpoint = 25 if position_element == "ra" else 25
+
+            return scale / (1 + np.exp(-1 * (var_difference - midpoint)))
+
+        ra_nudge = nudge_factor(abs(ra - self.location.ra.deg.mean()), "ra")
+        ra = ra + ra_nudge
+        delc_nudge = nudge_factor(abs(decl - self.location.dec.deg.mean()), "decl")
+        decl = decl + delc_nudge
+
+        location = self._sky_coordinates(ra, decl)
+        return location
 
     def _init_observator(
         self, obs_latitude_degrees, obs_logitude_degrees, obs_elevation_meters
@@ -237,6 +260,7 @@ class ObservationVariables:
         ra_degree,
         decl_degree,
     ):
+
         return astropy.coordinates.SkyCoord(
             ra=ra_degree * self.degree, dec=decl_degree * self.degree, unit="deg"
         )

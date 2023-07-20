@@ -71,11 +71,6 @@ def test_default_location(seo_observatory):
     assert longitude == np.round(location.lon.value, 2)
 
 
-def test_init_time(seo_observatory):
-    expected_time = astropy.time.Time(60000, format="mjd")
-    assert expected_time == seo_observatory.time
-
-
 # test all the variables (I have set ranges for)
 def test_sun_angles(observations):
     assert observations.sun_ha.values == pytest.approx(
@@ -163,6 +158,7 @@ def test_init_skybright():
     config = ReadConfig(config_path)()
     config["use_skybright"] = True
     SEO = ObservationVariables(config)
+    SEO.update(time=60000)
     results = SEO.calculate_sky_magnitude()
 
     assert "sky_magnitude" in results
@@ -171,30 +167,30 @@ def test_init_skybright():
 
 
 def test_nudge_large_change():
-    config = ReadConfig(config_path=None)()
+    config = ReadConfig(observator_configuration=None)()
     config["max_position_fuzz"] = {"decl": 0.5, "ra": 0.5}
     config["location"] = {"ra": [0], "decl": [0]}
     SEO = ObservationVariables(config)
 
     new_position = {"ra": [50], "decl": [50]}
-    SEO.update(time="", location=new_position)
+    SEO.update(time=60000, location=new_position)
 
-    assert pytest.approx(new_position["ra"], SEO.location["ra"], 2)
-    assert pytest.approx(new_position["decl"], SEO.location["decl"], 2)
+    assert pytest.approx(new_position["ra"], 2) == SEO.location.ra.deg
+    assert pytest.approx(new_position["decl"], 2) == SEO.location.dec.deg
 
-    assert pytest.approx(abs(new_position["ra"] - SEO.location["ra"]), 0.5, 0.01)
-    assert pytest.approx(abs(new_position["decl"] - SEO.location["decl"]), 0.5, 0.01)
+    assert pytest.approx(abs(new_position["ra"] - SEO.location.ra.deg), 0.01) == 0.5
+    assert pytest.approx(abs(new_position["decl"] - SEO.location.dec.deg), 0.01) == 0.5
 
 
 def test_nudge_small_change():
 
-    config = ReadConfig(config_path=None)()
+    config = ReadConfig(observator_configuration=None)()
     config["max_position_fuzz"] = {"decl": 0.5, "ra": 0.5}
     config["location"] = {"ra": [0], "decl": [0]}
     SEO = ObservationVariables(config)
 
-    new_position = {"ra": [0], "decl": [1]}
-    SEO.update(time="", location=new_position)
+    new_position = {"ra": [0], "decl": [0.1]}
+    SEO.update(time=60000, location=new_position)
 
-    assert pytest.approx(new_position["ra"], SEO.location["ra"], 0.00001)
-    assert pytest.approx(new_position["decl"], SEO.location["decl"], 0.0001)
+    assert pytest.approx(new_position["ra"] - SEO.location.ra.deg, abs=0.01) == 0
+    assert pytest.approx(new_position["decl"] - SEO.location.dec.deg, abs=0.01) == 0

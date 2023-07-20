@@ -49,6 +49,9 @@ class Survey:
         self.start_time = survey_config["start_time"]
         self.invalid_penality = survey_config["invalid_penality"]
 
+        self.time = self._start_time()
+        self.observator.update(time=self.time)
+
         self.save_config = survey_config["save"]
         self.timestep = 0
 
@@ -57,7 +60,6 @@ class Survey:
         self.observatory_variables = {
             key: var_dict[key] for key in survey_config["variables"]
         }
-        self.timestep = 0
 
     def _start_time(self):
         if self.start_time == "random":
@@ -67,9 +69,9 @@ class Survey:
 
     def reset(self):
         """Return the observer to its inital position, the time to the start time, and the timestep to 0."""
-        self.observator.update(time=0, band="g")
         self.timestep = 0
         self.time = self._start_time()
+        self.observator.update(time=self.time)
 
     def _validity(self, observation):
         valid = True
@@ -123,7 +125,7 @@ class Survey:
                 reward > self.reward_config["threshold"], reward, self.invalid_penality
             )
 
-        reward = np.where(not observation["valid"], self.invalid_penality, reward)
+        reward = np.where(~observation["valid"], self.invalid_penality, reward)
 
         return reward
 
@@ -137,7 +139,9 @@ class Survey:
         Returns:
             Tuple : observation (dict, containing survey_config["variables"], vality, Time (in mjd)), reward (array), stop (array), log (dictionary)
         """
+        print(action)
         self.observator.update(**action)
+        self.time = self.observator.time.mjd.mean()
         observation = self._observation_calculation()
         reward = self._reward(observation)
         self.timestep += 1
@@ -155,12 +159,7 @@ class Survey:
             observation[var_name] = self.observatory_variables[var_name]()[var_name]
 
         observation["valid"] = self._validity(observation=observation)
-        observation["mjd"] = np.asarray(
-            [
-                (self.observator.time.mjd + self.observator.delay).mean()
-                for _ in self.observator.location
-            ]
-        )
+        observation["mjd"] = np.array(self.time)
 
         return observation
 
