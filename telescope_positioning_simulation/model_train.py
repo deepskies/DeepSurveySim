@@ -16,11 +16,11 @@ except Exception:
 
 # configuration of the environment
 seo_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/SEO.yaml"
+        observator_configuration="settings/SEO.yaml"
     )()
 
 survey_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/equatorial_survey.yaml",
+        observator_configuration="settings/equatorial_survey.yaml",
         survey=True
     )()
 survey_config['location']  = {'ra': [0], 'decl': [0]}

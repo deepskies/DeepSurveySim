@@ -110,36 +110,29 @@ class Survey(gym.Env):
         return reward
 
     def step(self, action: dict):
-
         self.observator.update(**action)
         observation = self._observation_calculation()
         reward = self._reward(observation)
         self.timestep += 1
-
         stop = self._stop_condition(observation)
-
         log = {}
-
         return observation, reward, stop, log
 
     def _observation_calculation(self):
         observation = {}
         for var_name in self.observatory_variables:
-            #print("Obs calc",self.observatory_variables[var_name]()[var_name])
             observation[var_name] = np.asarray(self.observatory_variables[var_name]()[var_name], dtype=np.float32)
-            # TODO: Added to overcome the well-known issue of [[]] sometimes instead of [], to fix otherwise skybright does not work
+            # Added to overcome the issue of [[]] sometimes instead of [], to fix otherwise skybright does not work
             if isinstance(observation[var_name], np.ndarray) and observation[var_name].ndim == 2:
                 observation[var_name] = observation[var_name][0]
+        # TODO: maybe move somewhere else?
         default_values = {
             'sky_magnitude': [100000.0],
-            'teff': [-1.0]
+            'teff': [self.invalid_penality]
         }
-        nan = False
         for key, value in observation.items():
             if isinstance(value, np.ndarray) and np.isnan(value):
-                nan = True
                 observation[key] = np.asarray(default_values.get(key), dtype=np.float32)
-        #print("Nan Found", nan)
         observation["valid"] = self.validity(observation=observation)
         observation["mjd"] = np.asarray(
             [
@@ -163,7 +156,5 @@ class Survey(gym.Env):
             results[self.observator.time.mjd]["reward"] = np.array(
                 reward, dtype=np.float32
             )
-
-            # TODO checkpoint functionality
 
         return results

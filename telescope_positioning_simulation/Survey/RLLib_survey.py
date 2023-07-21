@@ -39,21 +39,17 @@ class Survey(SurveyBase):
         reward = super()._reward(observation, info)
         if isinstance(reward, np.ndarray) and reward.ndim == 1:
             reward = reward[0]
-        #print("Reward", reward)
         return reward
 
     def step(self, action: dict):
         action["time"] = self.previous_mjd
-        #print("Step",action)
         new_action = {"time": action["time"], "location": {"ra": action["ra"], "decl": action["decl"]}}
-        #print("New_action", new_action)
         self.observator.update(**new_action)
         observation = self._observation_calculation()
         info = {}
         info["invalid"] = not self.validity(observation)
         info["mjd"] = observation["mjd"]
         observation = {key: observation[key] for key in self.observatory_variables }
-        #print("Obs", observation)
         reward = self._reward(observation, info)
         self.timestep += 1
         self.previous_mjd = info["mjd"]
