@@ -477,23 +477,18 @@ class ObservationVariables:
             m0 = self.skybright.m_zen[self.band]
             nu = 10 ** (-1 * self.clouds / 2.5)
             fwhm500 = self.calculate_seeing()["fwhm"]
+            moon_elongation = self.calculate_moon_brightness()["moon_elongation"]
 
             sky_mag = np.asarray(
-                [
-                    self.skybright(
-                        self.time.mjd.mean(),
-                        location.ra.degree,
-                        location.dec.degree,
-                        self.band,
-                        moon_crds=astropy.coordinates.get_moon(self.time),
-                        moon_elongation=moon_elongation,
-                        sun_crds=astropy.coordinates.get_sun(self.time),
-                    )
-                    for location, moon_elongation in zip(
-                        self.location,
-                        self.calculate_moon_brightness()["moon_elongation"],
-                    )
-                ]
+                self.skybright(
+                    self.time.mjd.mean(),
+                    self.location.ra.degree,
+                    self.location.dec.degree,
+                    self.band,
+                    moon_crds=astropy.coordinates.get_moon(self.time),
+                    moon_elongation=moon_elongation[0],
+                    sun_crds=astropy.coordinates.get_sun(self.time),
+                )
             )
 
             tau = ((nu * (0.9 / fwhm500)) ** 2) * (10 ** ((sky_mag - m0) / 2.5))
