@@ -12,7 +12,12 @@ Simply run
 
 `pip install git+https://github.com/deepskies/TelescopePositioningSimulation`
 
-This will install the project with all its requirements.
+This will install the project with all its mandatory requirements.
+
+If you wish to include the optional `skybright`, use the command:
+`pip install git+https://github.com/deepskies/TelescopePositioningSimulation@development#egg=telescope-positioning-simulation[skybright]`
+
+Not installing this will result in loss of the variables `sky_magintude`, `tau`, and `teff`, but will work on most (if not all) machines.
 
 ## Install from source
 
@@ -20,8 +25,9 @@ The project is built with [poetry](https://python-poetry.org/), and this is the 
 All dependencies are resolved in the `poetry.lock` file, so you can install immediately from the command
 
 ```
+git clone https://github.com/deepskies/TelescopePositioningSimulation.git
 poetry shell
-poetry install
+poetry install --all-extras
 
 ```
 
