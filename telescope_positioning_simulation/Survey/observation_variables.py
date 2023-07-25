@@ -3,7 +3,6 @@ import astroplan
 import astropy
 import numpy as np
 import os
-
 import numexpr
 
 
@@ -108,24 +107,22 @@ class ObservationVariables:
             from skybright import skybright
             from configparser import ConfigParser
 
+            default_config_path = f"{os.path.dirname(__file__).rstrip('/')}/../settings/skybright_config.conf"
+
+            config_path = (
+                default_config_path
+                if skybright_config["config"] == "default"
+                else skybright_config["config"]
+            )
+            skybright_config_file = ConfigParser()
+            skybright_config_file.read(config_path)
+
+            self.skybright = skybright.MoonSkyModel(skybright_config_file)
+
         except ModuleNotFoundError:
             print(
                 "ERROR: skybright module not found, please install it from https://github.com/ehneilsen/skybright.git"
             )
-
-        default_config_path = (
-            f"{os.path.dirname(__file__).rstrip('/')}/../settings/skybright_config.conf"
-        )
-
-        config_path = (
-            default_config_path
-            if skybright_config["config"] == "default"
-            else skybright_config["config"]
-        )
-        skybright_config_file = ConfigParser()
-        skybright_config_file.read(config_path)
-
-        self.skybright = skybright.MoonSkyModel(skybright_config_file)
 
     def update(
         self,

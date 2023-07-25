@@ -15,7 +15,7 @@ def envoriment():
 
             survey_config["variables"] = ["airmass", "alt", "sky_magnitude", "teff"]
             survey_config["stopping"] = {"timestep": 2}
-            obs_config["use_skybright"] = True
+            obs_config["use_skybright"] = False
             obs_config["location"] = {"ra": [0], "decl": [0]}
 
             super().__init__(observatory_config=obs_config, survey_config=survey_config)
