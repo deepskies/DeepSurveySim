@@ -237,7 +237,10 @@ It also sets inital conditions.
 .. attribute:: Variables
 
     List of variables used in the survey.
-    View [Observation Variables](link to the survey/obsersvars page) for further details
+
+    All possible variables are:
+
+    ['lst', 'pt_seeing', 'band_seeing', 'fwhm', 'moon_ha', 'moon_elongation', 'moon_phase', 'moon_illumination', 'moon_Vmagintude', 'moon_seperation', 'moon_ra', 'moon_decl', 'moon_airmass', 'airmass', 'az', 'alt', 'ha', 'sun_ha', 'sun_airmass', 'sun_ra', 'sun_decl']
 
     :param variables: List of string names of the variables used in the survey.
     :type monitor: list
