@@ -12,7 +12,7 @@ Welcome to TelescopePositioningSimulator's documentation!
    io
    survey
    configurations
-
+   cookbook
 
 Indices and tables
 ==================
