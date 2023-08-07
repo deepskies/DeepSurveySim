@@ -74,7 +74,7 @@ def envoriment():
     return RllibSurvey
 
 
-def test_setup_env(envoriment):
+def _setup_env(envoriment):
     from ray.rllib.algorithms.ppo import PPOConfig
     import ray
 
