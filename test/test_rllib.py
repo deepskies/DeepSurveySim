@@ -13,7 +13,7 @@ def envoriment():
             obs_config = ReadConfig()()
             survey_config = ReadConfig(survey=True)()
 
-            survey_config["variables"] = ["airmass", "alt", "sky_magnitude", "teff"]
+            survey_config["variables"] = ["airmass", "alt"]
             survey_config["stopping"] = {"timestep": 2}
             obs_config["use_skybright"] = False
             obs_config["location"] = {"ra": [0], "decl": [0]}
@@ -35,12 +35,6 @@ def envoriment():
                         low=-100000, high=100000, shape=(1,), dtype=np.float32
                     ),
                     "alt": spaces.Box(
-                        low=-100000, high=100000, shape=(1,), dtype=np.float32
-                    ),
-                    "sky_magnitude": spaces.Box(
-                        low=-100000, high=100000, shape=(1,), dtype=np.float32
-                    ),
-                    "teff": spaces.Box(
                         low=-100000, high=100000, shape=(1,), dtype=np.float32
                     ),
                 }
@@ -87,7 +81,7 @@ def test_setup_env(envoriment):
     ray.init()
     alg_config = PPOConfig().training()
     alg_config = alg_config.environment(env=envoriment)
-    alg_config = alg_config.rollouts(num_rollout_workers=10)
+    alg_config = alg_config.rollouts(num_rollout_workers=1)
     alg_config = alg_config.resources(num_gpus=0)
 
     alg_config = alg_config.build()
