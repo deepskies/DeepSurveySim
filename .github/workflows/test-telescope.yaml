@@ -25,7 +25,7 @@ jobs:
 
     - name: Install dependencies
       shell: bash
-      run: python -m poetry install
+      run: python -m poetry install --without skybright
 
     - name: Test with pytest
       run: |

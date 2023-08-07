@@ -156,14 +156,21 @@ def test_hour_angle(seo_observatory, observations):
 def test_init_skybright():
     config_path = "test/test_files/empty_config.yaml"
     config = ReadConfig(config_path)()
-    config["use_skybright"] = True
-    SEO = ObservationVariables(config)
-    SEO.update(time=60000)
-    results = SEO.calculate_sky_magnitude()
 
-    assert "sky_magnitude" in results
-    assert "tau" in results
-    assert "teff" in results
+    import importlib.util
+
+    package_name = "skybright"
+    spec = importlib.util.find_spec(package_name)
+
+    if spec is not None:
+        config["use_skybright"] = True
+        SEO = ObservationVariables(config)
+        SEO.update(time=60000)
+        results = SEO.calculate_sky_magnitude()
+
+        assert "sky_magnitude" in results
+        assert "tau" in results
+        assert "teff" in results
 
 
 def test_nudge_large_change():

@@ -176,11 +176,3 @@ def test_subset_gather_variables():
             assert observation[key].shape == expected_shape
 
     assert set(observation_keys) == set(expected_subset)
-
-
-def test_single_reward():
-    pass
-
-
-def test_threshold_reward():
-    pass
