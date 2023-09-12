@@ -14,9 +14,9 @@ class Weather:
     ) -> None:
 
         csv_configuration = {**csv_configuration, **self.default_configuration()}
-        self.seeing = csv_configuration["seeing"]
-        self.clouds = csv_configuration["clouds"]
-        self.date = csv_configuration["date"]
+        self.seeing_name = csv_configuration["seeing"]
+        self.clouds_name = csv_configuration["clouds"]
+        self.date_name = csv_configuration["date"]
 
         self.seeing_tolerance = seeing_tolerance
         self.clouds_tolerance = cloud_tolerance
@@ -25,7 +25,7 @@ class Weather:
         self.reference_clouds = base_clouds
 
         self.weather_source = pd.read_csv(weather_source_file)[
-            [self.seeing, self.date, self.clouds]
+            [self.seeing_name, self.date_name, self.clouds_name]
         ]
         self.format_source(csv_configuration)
 
@@ -33,27 +33,32 @@ class Weather:
         return {
             "seeing": "HourlySkyConditions",
             "clouds": "HourlyStationPressure",
-            "reference_clouds": "29.92",
+            "reference_clouds": 29.92,
             "date": "DATE",
-            "date_format": "YYYY-MM-DD",
             "allowed_conditions": ["FEW", "CLR"],
         }
 
     def format_source(self, configuration):
         allowed = "|".join(configuration["allowed_conditions"])
         self.weather_source[
-            self.weather_source[self.conditions].str.contains(allowed) == True
-        ][self.conditions] = 1
+            self.weather_source[self.seeing_name].str.contains(allowed) == True
+        ][self.seeing_name] = 1
 
         self.weather_source[
-            self.weather_source[self.conditions].str.contains(allowed) == False
-        ][self.conditions] = 0
+            self.weather_source[self.seeing_name].str.contains(allowed) == False
+        ][self.seeing_name] = 0
 
-        self.weather_source[self.date] = pd.to_datetime(
-            self.weather_source[self.date], format=configuration["date_format"]
+        print(self.weather_source[self.seeing_name])
+        self.weather_source[self.date_name] = pd.to_datetime(
+            self.weather_source[self.date_name], infer_datetime_format=True
         )
-        self.weather_source[self.clouds] = abs(
-            self.weather_source[self.clouds] - configuration["reference_clouds"]
+
+        self.weather_source[self.clouds_name] = self.weather_source[
+            self.clouds_name
+        ].str.replace(r"[^0-9]+", "")
+        self.weather_source[self.clouds_name] = abs(
+            self.weather_source[self.clouds_name].astype(float)
+            - configuration["reference_clouds"]
         )
 
         self.weather_source.dropna(inplace=True)
@@ -66,12 +71,12 @@ class Weather:
     def condition(self, mjd):
         month = self.find_month(mjd)
         matching = self.weather_source[
-            self.weather_source[self.date].str.datetime.month == month
+            self.weather_source[self.date_name].dt.month == month
         ]
         return matching
 
     def seeing(self, condition):
-        seeing_conditions = 1 - condition[self.seeing].avg()
+        seeing_conditions = 1 - condition[self.seeing_name].mean()
 
         if seeing_conditions >= self.cover_tolerance:
             seeing = 0
@@ -81,11 +86,11 @@ class Weather:
         return seeing
 
     def clouds(self, condition):
-        cloud_condition = condition[self.cloud].avg()
+        cloud_condition = condition[self.clouds_name].mean()
 
-        if cloud_condition >= self.cover_tolerance:
+        if cloud_condition >= self.clouds_tolerance:
             clouds = 1
         else:
-            clouds = self.reference_clouds + round(cloud_condition, 1)
+            clouds = self.reference_clouds
 
         return clouds

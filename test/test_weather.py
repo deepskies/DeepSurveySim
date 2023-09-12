@@ -15,7 +15,7 @@ def weather():
 
 @pytest.fixture
 def obsprog():
-    config = ReadConfig()
+    config = ReadConfig()()
     source_path = "./telescope_positioning_simulation/settings/3428354.csv"
     config["weather"] = {"include": True, "weather_source_file": source_path}
     return ObservationVariables(config)
@@ -23,16 +23,16 @@ def obsprog():
 
 def test_find_date_summer(weather):
     mjd = 58300  # Jul 01 2018
-    date = weather.find_date(mjd)
+    date = weather.find_month(mjd)
 
-    assert np.all(date.str.month == 7)
+    assert date == 7
 
 
 def test_find_date_winter(weather):
     mjd = 58119  # Jan 01 2018
-    date = weather.find_date(mjd)
+    date = weather.find_month(mjd)
 
-    assert np.all(date.str.month == 1)
+    assert date == 1
 
 
 def test_find_condition(weather):
