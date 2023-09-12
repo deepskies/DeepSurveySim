@@ -139,7 +139,6 @@ class Survey:
         Returns:
             Tuple : observation (dict, containing survey_config["variables"], vality, Time (in mjd)), reward (array), stop (array), log (dictionary)
         """
-        print(action)
         self.observator.update(**action)
         self.time = self.observator.time.mjd.mean()
         observation = self._observation_calculation()
