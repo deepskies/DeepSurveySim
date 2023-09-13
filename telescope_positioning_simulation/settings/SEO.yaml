@@ -35,3 +35,9 @@ location : {'n_sites': 10}
 # skybright options
 use_skybright: False
 skybright: {"config":'default'}
+
+# weather options: 
+weather: {
+  "include":False, 
+  "weather_source_file": "./telescope_positioning_simulation/settings/3454536.csv"
+}

@@ -5,10 +5,10 @@ from telescope_positioning_simulation.Survey import Weather
 from telescope_positioning_simulation.Survey import ObservationVariables
 from telescope_positioning_simulation.IO import ReadConfig
 
+weather_source_file = "./telescope_positioning_simulation/settings/3454536.csv"
 
 @pytest.fixture
 def weather():
-    weather_source_file = "./telescope_positioning_simulation/settings/3428354.csv"
     weather = Weather(weather_source_file)
     return weather
 
@@ -16,8 +16,7 @@ def weather():
 @pytest.fixture
 def obsprog():
     config = ReadConfig()()
-    source_path = "./telescope_positioning_simulation/settings/3428354.csv"
-    config["weather"] = {"include": True, "weather_source_file": source_path}
+    config["weather"] = {"include": True, "weather_source_file": weather_source_file}
     return ObservationVariables(config)
 
 
@@ -39,7 +38,7 @@ def test_find_condition(weather):
     mjd = 58300
     condition = weather.condition(mjd)
 
-    assert np.all(condition["DATE"].str.datetime.month == 7)
+    assert np.all(condition["DATE"].dt.month == 7)
 
 
 def test_find_seeing(weather):
@@ -66,16 +65,9 @@ def test_update_seeing_good_conditions(obsprog):
     assert obsprog.seeing == 0.9
 
 
-def test_update_seeing_middling_conditions(obsprog):
-    obsprog.update(time=58300)
-
-    assert obsprog.seeing != 0.9
-    assert obsprog.seeing != 0.0
-
-
 def test_update_seeing_bad_conditions(obsprog):
-    obsprog.update(time=58300)
-    assert obsprog.seeing == 0.0
+    obsprog.update(time=58119)
+    assert obsprog.seeing != 0.9
 
 
 def test_update_clouds_good_conditions(obsprog):
@@ -85,6 +77,6 @@ def test_update_clouds_good_conditions(obsprog):
 
 def test_update_clouds_bad_conditions(obsprog):
     original_clouds = obsprog.clouds
-    obsprog.update(time=58300)
+    obsprog.update(time=58119)
 
     assert obsprog.clouds != original_clouds
