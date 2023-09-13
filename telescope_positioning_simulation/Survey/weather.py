@@ -13,8 +13,22 @@ class Weather:
         csv_configuration: dict = {},
         **kwargs
     ) -> None:
+        """Run a deteriministic weather simulation based on historical data. 
+        Assumes all weather conditions are a function of the month. 
+        Update either "clouds" or "seeing" based on given tolerances. 
 
-        csv_configuration = {**csv_configuration, **self.default_configuration()}
+        Args:
+            weather_source_file (str): Path to csv file containing historical weather data. 
+            seeing_tolerance (float, optional): Allowed percent of cloudiness before seeing is impacted. Defaults to 0.5.
+            cloud_tolerance (float, optional): Allowed percent of cloudiness before clouds are set to full extiniction. Defaults to 0.5.
+            base_seeing (float, optional): Best allowed seeing conditions. Defaults to 0.9.
+            base_clouds (float, optional): Best allowed cloud conditions. Defaults to 0.
+            csv_configuration (dict, optional): Instructions on how to read the csv, add in any parameters to the configuration dictionary with this argument. Defaults to {"seeing": "HourlySkyConditions","date": "DATE", "allowed_conditions": ["FEW", "CLR"]}
+        }
+.
+        """
+
+        csv_configuration = {**csv_configuration, **self._default_configuration()}
         self.seeing_name = csv_configuration["seeing"]
         self.date_name = csv_configuration["date"]
 
@@ -27,17 +41,16 @@ class Weather:
         self.weather_source = pd.read_csv(weather_source_file)[
             [self.seeing_name, self.date_name]
         ]
-        self.format_source(csv_configuration)
+        self._format_source(csv_configuration)
 
-    def default_configuration(self):
+    def _default_configuration(self):
         return {
             "seeing": "HourlySkyConditions",
-            "reference_clouds": 29.92,
             "date": "DATE",
             "allowed_conditions": ["FEW", "CLR"],
         }
 
-    def format_source(self, configuration):
+    def _format_source(self, configuration):
 
         self.weather_source.dropna(inplace=True)
 
@@ -50,19 +63,37 @@ class Weather:
             self.weather_source[self.date_name], infer_datetime_format=True
         )
 
-    def find_month(self, mjd):
+    def _find_month(self, mjd):
         date = Time(mjd, format="mjd")
         month = date.datetime.month
         return month
 
     def condition(self, mjd):
-        month = self.find_month(mjd)
+        """
+        Return the sky conditions for all data with the same month as the supplied mjd. 
+
+        Args:
+            mjd (Union(int, float)): Date in MJD to get sky conditions for. 
+
+        Returns:
+           pd.Series: Conditions of the sky with the same month as the supplied mjd. 
+        """
+        month = self._find_month(mjd)
         matching = self.weather_source[
             self.weather_source[self.date_name].dt.month == month
         ]
         return matching
 
     def seeing(self, condition):
+        """ 
+        Approximate seeing conditions. If the seeing condition is above the tolerance level, seeing is scaled by the percent removed from perfect seeing
+
+        Args:
+            condition (pd.Series): Series to arggergate into a seeing score
+
+        Returns:
+            float: Updated seeing conditions
+        """
         seeing_conditions = 1 - condition[self.seeing_name].mean()
 
         if seeing_conditions >= self.seeing_tolerance:
@@ -73,6 +104,15 @@ class Weather:
         return seeing
 
     def clouds(self, condition):
+        """
+        Approximate cloud extiction. If the cloud conditions are above the tolerance levels, clouds are set to 1. Else returns them to base levels. 
+
+        Args:
+            condition (pd.Series): Series to arggergate into a cloud score
+
+        Returns:
+            float: clouds for the passed condition
+        """
         cloud_condition = 1 -  condition[self.seeing_name].mean()
         if cloud_condition >= self.clouds_tolerance:
             clouds = 1

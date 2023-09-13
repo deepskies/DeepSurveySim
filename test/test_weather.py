@@ -16,20 +16,21 @@ def weather():
 @pytest.fixture
 def obsprog():
     config = ReadConfig()()
-    config["weather"] = {"include": True, "weather_source_file": weather_source_file}
+    config["weather_sim"] = True
+    config['weather_config'] = {"weather_source_file": weather_source_file}
     return ObservationVariables(config)
 
 
 def test_find_date_summer(weather):
     mjd = 58300  # Jul 01 2018
-    date = weather.find_month(mjd)
+    date = weather._find_month(mjd)
 
     assert date == 7
 
 
 def test_find_date_winter(weather):
     mjd = 58119  # Jan 01 2018
-    date = weather.find_month(mjd)
+    date = weather._find_month(mjd)
 
     assert date == 1
 

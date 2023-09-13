@@ -83,8 +83,8 @@ class ObservationVariables:
 
         self.seeing = observator_configuration["seeing"]
         self.clouds = observator_configuration["cloud_extinction"]
-        if observator_configuration['weather']['include']: 
-            self._init_weather(observator_configuration['weather'])
+        if observator_configuration['weather_sim']: 
+            self._init_weather(observator_configuration['weather_config'])
         
         self.optics_fwhm = observator_configuration["fwhm"]
 
