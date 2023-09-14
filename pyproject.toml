@@ -20,9 +20,7 @@ pytest-cov = "^4.0.0"
 pre-commit = "^3.3.2"
 sphinx = "^7.0.1"
 sphinx-autodoc-typehints = "^1.23.3"
-ray = {extras = ["rllib"], version = "^2.6.0"}
 gymnasium = "0.26.3"
-torch = "^2.0.1"
 
 [tool.poetry.extras]
 skybright = ["skybright"]
