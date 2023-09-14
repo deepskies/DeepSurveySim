@@ -27,7 +27,7 @@ seeing: 0.9
 cloud_extinction: 0.0
 weather_sim: False
 weather_config: {
-  'weather_source_file': "./telescope_positioning_simulation/settings/3454536.csv"
+  'weather_source_file': "./telescope_positioning_simulation/settings/SEO_weather.csv"
 }
 
 # camera
@@ -40,4 +40,4 @@ location : {'n_sites': 10}
 use_skybright: False
 skybright: {"config":'default'}
 
-# weather options: 
+# weather options:

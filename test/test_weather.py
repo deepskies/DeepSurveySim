@@ -5,7 +5,8 @@ from telescope_positioning_simulation.Survey import Weather
 from telescope_positioning_simulation.Survey import ObservationVariables
 from telescope_positioning_simulation.IO import ReadConfig
 
-weather_source_file = "./telescope_positioning_simulation/settings/3454536.csv"
+weather_source_file = "./telescope_positioning_simulation/settings/SEO_weather.csv"
+
 
 @pytest.fixture
 def weather():
@@ -17,7 +18,7 @@ def weather():
 def obsprog():
     config = ReadConfig()()
     config["weather_sim"] = True
-    config['weather_config'] = {"weather_source_file": weather_source_file}
+    config["weather_config"] = {"weather_source_file": weather_source_file}
     return ObservationVariables(config)
 
 
