@@ -3,7 +3,33 @@ import numpy as np
 import pandas as pd
 
 
-class UniformSurvey(Survey):
+class CummulativeSurvey(Survey):
+    def __init__(self, observatory_config: dict, survey_config: dict) -> None:
+        super().__init__(observatory_config, survey_config)
+        self.all_steps = pd.DataFrame()
+
+    def reset(self):
+        self.all_steps = pd.DataFrame()
+        return super().reset()
+
+    def _subclass_reward(self):
+        raise NotImplemented
+
+    def step(self, action: dict):
+        observation, reward, stop, log = super().step(action)
+        observation_pd = {key: observation[key].ravel() for key in observation.keys()}
+
+        observation_pd = pd.DataFrame(observation_pd)
+        observation_pd["action"] = str(action["location"]) + str(action["band"])
+        observation_pd["reward"] = reward
+
+        self.all_steps = self.all_steps.append(observation_pd)
+
+        reward = self._subclass_reward()
+        return observation, reward, stop, log
+
+
+class UniformSurvey(CummulativeSurvey):
     """
     A child survey that instead of evaluating the schedule at every step, evaluates it for a full schedule.
     This survey requires a threshold is reached for each observation before it starts recording any sort of reward.
@@ -35,7 +61,6 @@ class UniformSurvey(Survey):
         uniform: str = "site",
     ) -> None:
         super().__init__(observatory_config, survey_config)
-        self.all_steps = pd.DataFrame()
 
         self.threshold = threshold
         reward_function = {
@@ -69,33 +94,34 @@ class UniformSurvey(Survey):
         reward_sum = current_steps["reward"].sum()
         return reward_scale * reward_sum
 
-    def reset(self):
-        self.all_steps = pd.DataFrame()
-        return super().reset()
-
-    def _reward(self, *args, **kwargs):
+    def _subclass_reward(self, *args, **kwargs):
         if len(self.all_steps) != 0:
             reward = self.reward_function()
-            reward = reward if not pd.isnull(reward) else 0
+            reward = reward if not (pd.isnull(reward) or reward == -np.inf) else 0
 
             return reward
         else:
             return 0
 
-    def step(self, action: dict):
-        observation, reward, stop, log = super().step(action)
-        observation_pd = {key: observation[key].ravel() for key in observation.keys()}
 
-        observation_pd = pd.DataFrame(observation_pd)
-        observation_pd["action"] = str(action["location"]) + str(action["band"])
-        observation_pd["reward"] = reward
-
-        self.all_steps = self.all_steps.append(observation_pd)
-
-        reward = self._reward()
-        return observation, reward, stop, log
-
-
-class LowVisiblitySurvey(Survey):
-    def __init__(self, observatory_config: dict, survey_config: dict) -> None:
+class LowVisiblitySurvey(CummulativeSurvey):
+    def __init__(
+        self, observatory_config: dict, survey_config: dict, required_sites: dict = {}
+    ) -> None:
         super().__init__(observatory_config, survey_config)
+
+        self.all_steps = pd.DataFrame()
+        self.required_sites = required_sites
+
+    def _subclass_reward(self):
+        if len(self.all_steps) != 0:
+            reward_scale = 1 / len(self.all_steps)
+            weighted_term = self.weight * self.all_steps["reward"].sum()
+            number_of_interest_hit = ""
+
+            reward = reward_scale * (weighted_term + number_of_interest_hit)
+            reward = reward if not (pd.isnull(reward) or reward == -np.inf) else 0
+
+            return reward
+        else:
+            return 0
