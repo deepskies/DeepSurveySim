@@ -1,6 +1,7 @@
 from telescope_positioning_simulation.Survey.survey import Survey
 import numpy as np
 import pandas as pd
+import json
 
 
 class CummulativeSurvey(Survey):
@@ -20,7 +21,11 @@ class CummulativeSurvey(Survey):
         observation_pd = {key: observation[key].ravel() for key in observation.keys()}
 
         observation_pd = pd.DataFrame(observation_pd)
-        observation_pd["action"] = str(action["location"]) + str(action["band"])
+        observation_pd["action"] = str(
+            {"location": action["location"], "band": self.observator.band}
+        )
+        observation_pd["band"] = self.observator.band
+        observation_pd["location"] = str(action["location"])
         observation_pd["reward"] = reward
 
         self.all_steps = self.all_steps.append(observation_pd)
@@ -39,18 +44,6 @@ class UniformSurvey(CummulativeSurvey):
         survey_config (dict): Parameters for the survey, including the stopping conditions, the validity conditions, the variables to collect, as read by IO.ReadConfig
         threshold (float): Threshold the survey must pass to have its quality counted towards the total reward
         uniform (str): ["site", "quality"] - If measuring the uniformity of the number of times each site has been visited, or the uniformity of the quality of observations
-
-    Examples:
-        >>> survey = Survey(observatory_config, survey_config)
-            action_generator = ActionGenerator() # Attributary function to produce time, location pairs
-            for step in range(10):
-                action_time, action_location = action_generator()
-                update_action = {"time":[action_time], "location":{"ra":[action_location["ra"]], "decl":[action_location["decl"]]}}
-                observation, reward, stop, log = survey.step(update_action)
-
-        >>> survey = Survey(observatory_config, survey_config)
-            # Run without changing the location, only stepping time forward
-            survey_results = survey()
     """
 
     def __init__(
@@ -81,7 +74,9 @@ class UniformSurvey(CummulativeSurvey):
             self.all_steps["action"].isin(counts.index[counts < self.threshold]),
             "reward",
         ] = 0
-        reward_sum = current_steps.groupby(["mjd", "action"])["reward"].sum().sum()
+        reward_sum = (
+            current_steps.groupby(["mjd", "action", "band"])["reward"].sum().sum()
+        )
 
         return reward_scale * reward_sum
 
@@ -106,22 +101,50 @@ class UniformSurvey(CummulativeSurvey):
 
 class LowVisiblitySurvey(CummulativeSurvey):
     def __init__(
-        self, observatory_config: dict, survey_config: dict, required_sites: dict = {}
+        self,
+        observatory_config: dict,
+        survey_config: dict,
+        required_sites: list = [],
+        other_site_weight: float = 0.6,
+        time_tolerance: float = 0.01388,
     ) -> None:
         super().__init__(observatory_config, survey_config)
 
-        self.all_steps = pd.DataFrame()
         self.required_sites = required_sites
+        self.time_tolerance = time_tolerance
+        self.weight = other_site_weight
+
+    def sites_hit(self):
+        # TODO do this with sets and arrays instead of a loop
+        hit_counter = 0
+        for site in self.required_sites:
+
+            subset = self.all_steps.copy()
+            if "time" in site.keys():
+                subset = subset[
+                    (subset["mjd"] < site["time"][0] + self.time_tolerance)
+                    & (subset["mjd"] > site["time"][0] - self.time_tolerance)
+                ]
+
+            if "band" in site.keys():
+                subset = subset[subset["band"] == site["band"]]
+
+            subset = subset[subset["location"] == str(site["location"])]
+            hit_counter += len(subset)
+
+        return hit_counter
 
     def _subclass_reward(self):
         if len(self.all_steps) != 0:
+
             reward_scale = 1 / len(self.all_steps)
             weighted_term = self.weight * self.all_steps["reward"].sum()
-            number_of_interest_hit = ""
+            number_of_interest_hit = self.sites_hit()
 
             reward = reward_scale * (weighted_term + number_of_interest_hit)
             reward = reward if not (pd.isnull(reward) or reward == -np.inf) else 0
 
             return reward
+
         else:
             return 0
