@@ -24,16 +24,17 @@ def obsprog():
 
 def test_find_date_summer(weather):
     mjd = 58300  # Jul 01 2018
-    date = weather._find_month(mjd)
+    month, day = weather._find_date(mjd)
 
-    assert date == 7
-
+    assert month == 7
+    assert day == 1
 
 def test_find_date_winter(weather):
     mjd = 58119  # Jan 01 2018
-    date = weather._find_month(mjd)
+    month, day = weather._find_date(mjd)
 
-    assert date == 1
+    assert month == 1
+    assert day == 1
 
 
 def test_find_condition(weather):
@@ -41,10 +42,11 @@ def test_find_condition(weather):
     condition = weather.condition(mjd)
 
     assert np.all(condition["DATE"].dt.month == 7)
-
+    assert np.all(condition['DATE'].dt.day.isin([1,2,3]))
+    
 
 def test_find_seeing(weather):
-    mjd = 58300
+    mjd = 58320
     condition = weather.condition(mjd)
     seeing = weather.seeing(condition)
     assert seeing == pytest.approx(0.9, 0.1)
@@ -55,7 +57,7 @@ def test_find_clouds(weather):
     condition = weather.condition(mjd)
     clouds = weather.clouds(condition)
 
-    assert clouds == pytest.approx(0.0, 0.1)
+    assert clouds == pytest.approx(1.0, 0.1)
 
 
 def test_init_weather_in_obser(obsprog):
@@ -63,7 +65,7 @@ def test_init_weather_in_obser(obsprog):
 
 
 def test_update_seeing_good_conditions(obsprog):
-    obsprog.update(time=58300)
+    obsprog.update(time=58320)
     assert obsprog.seeing == 0.9
 
 
@@ -73,7 +75,7 @@ def test_update_seeing_bad_conditions(obsprog):
 
 
 def test_update_clouds_good_conditions(obsprog):
-    obsprog.update(time=58300)
+    obsprog.update(time=58320)
     assert obsprog.clouds == 0.0
 
 

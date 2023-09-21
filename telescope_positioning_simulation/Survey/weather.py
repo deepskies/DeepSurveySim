@@ -63,10 +63,11 @@ class Weather:
             self.weather_source[self.date_name], infer_datetime_format=True
         )
 
-    def _find_month(self, mjd):
+    def _find_date(self, mjd):
         date = Time(mjd, format="mjd")
         month = date.datetime.month
-        return month
+        day = date.datetime.day
+        return month, day
 
     def condition(self, mjd):
         """
@@ -78,10 +79,11 @@ class Weather:
         Returns:
            pd.Series: Conditions of the sky with the same month as the supplied mjd. 
         """
-        month = self._find_month(mjd)
+        month, day = self._find_date(mjd)
         matching = self.weather_source[
             self.weather_source[self.date_name].dt.month == month
         ]
+        matching = matching[matching[self.date_name].dt.day.isin([day, day+1, day+2])]
         return matching
 
     def seeing(self, condition):
