@@ -15,15 +15,15 @@ def test_uniform_site():
         observatory_config=obs_config, survey_config=ReadConfig(survey=True)()
     )
     assert len(uniform_survey.all_steps) == 0
-    assert uniform_survey._subclass_reward() == 0
+    assert uniform_survey.cummulative_reward() == 0
 
     uniform_survey.step(action)
-    assert uniform_survey._subclass_reward() == 0
+    assert uniform_survey.cummulative_reward() == 0
     assert len(uniform_survey.all_steps) == 1
 
     uniform_survey.step(action_2)
     assert len(uniform_survey.all_steps) == 2
-    assert uniform_survey._subclass_reward() == 0
+    assert uniform_survey.cummulative_reward() == 0
 
 
 def test_uniform_quality():
@@ -38,15 +38,15 @@ def test_uniform_quality():
         uniform="quality",
     )
     assert len(uniform_survey.all_steps) == 0
-    assert uniform_survey._subclass_reward() == 0
+    assert uniform_survey.cummulative_reward() == 0
 
     uniform_survey.step(action)
-    assert uniform_survey._subclass_reward() == 0
+    assert uniform_survey.cummulative_reward() == 0
     assert len(uniform_survey.all_steps) == 1
 
     uniform_survey.step(action_2)
     assert len(uniform_survey.all_steps) == 2
-    assert uniform_survey._subclass_reward() == 0
+    assert uniform_survey.cummulative_reward() == 0
 
 
 # Todo - schedule that passes the conditions in the defaults
@@ -76,7 +76,7 @@ def test_lowvis_hit_required_sites():
         survey.step(action)
 
     print(survey.all_steps)
-    assert survey._subclass_reward() >= expected_reward
+    assert survey.cummulative_reward() >= expected_reward
 
 
 def test_lowvis_hit_required_sites_correct_time():
@@ -100,7 +100,7 @@ def test_lowvis_hit_required_sites_correct_time():
     for action in required_sites:
         survey.step(action)
 
-    assert survey._subclass_reward() >= expected_reward
+    assert survey.cummulative_reward() >= expected_reward
 
 
 def test_lowvis_hit_required_sites_incorrect_time():
@@ -128,7 +128,7 @@ def test_lowvis_hit_required_sites_incorrect_time():
     for action in actions:
         survey.step(action)
 
-    assert survey._subclass_reward() < expected_reward
+    assert survey.cummulative_reward() < expected_reward
 
 
 def test_lowvis_hit_required_sites_incorrect_band():
@@ -157,7 +157,7 @@ def test_lowvis_hit_required_sites_incorrect_band():
     for action in actions:
         survey.step(action)
 
-    assert survey._subclass_reward() < expected_reward
+    assert survey.cummulative_reward() < expected_reward
 
 
 def test_lowvis_incorrect_sites():
@@ -186,4 +186,4 @@ def test_lowvis_incorrect_sites():
     for action in actions:
         survey.step(action)
 
-    assert survey._subclass_reward() < expected_reward
+    assert survey.cummulative_reward() < expected_reward

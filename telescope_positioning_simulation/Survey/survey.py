@@ -166,6 +166,12 @@ class Survey:
         return observation
 
     def __call__(self):
+        """
+        Run the survey with the initial location until the stopping condition is met, return the completed survey
+
+        Returns:
+            dict: Evaluated survey in the form of time:{"variable_name":[variable_value]}
+        """
         stop = False
         results = {}
         while not stop:

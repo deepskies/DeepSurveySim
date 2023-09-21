@@ -5,18 +5,39 @@ import json
 
 
 class CummulativeSurvey(Survey):
-    def __init__(self, observatory_config: dict, survey_config: dict) -> None:
+    def __init__(
+        self, observatory_config: dict, survey_config: dict, *args, **kwargs
+    ) -> None:
+        """
+        Abstract class for a survey that evaluated across multiple steps
+
+        Args:
+            observatory_config (dict): _description_
+            survey_config (dict): _description_
+        """
         super().__init__(observatory_config, survey_config)
         self.all_steps = pd.DataFrame()
 
     def reset(self):
+        """Return the survey to its initial condition, wipe out all the original steps"""
         self.all_steps = pd.DataFrame()
         return super().reset()
 
-    def _subclass_reward(self):
+    def cummulative_reward(self):
+        """Reward that uses the 'all_steps' class parameter."""
         raise NotImplemented
 
     def step(self, action: dict):
+        """
+        Move the observator forward with one action and add the reward and stop condition to the returned observation.
+        Reward is defined with 'cummulative_reward'
+
+        Args:
+            action (dict): Dictionary containing "time" (array in units Mean Julian Date) "location"(dict with ra, decl, in degrees as arrays) (optional), "band" (str of the represention of the optical filter) (optional)
+
+        Returns:
+            Tuple : observation (dict, containing survey_config["variables"], vality, Time (in mjd)), reward (array), stop (array), log (dictionary)
+        """
         observation, reward, stop, log = super().step(action)
         observation_pd = {key: observation[key].ravel() for key in observation.keys()}
 
@@ -30,7 +51,7 @@ class CummulativeSurvey(Survey):
 
         self.all_steps = self.all_steps.append(observation_pd)
 
-        reward = self._subclass_reward()
+        reward = self.cummulative_reward()
         return observation, reward, stop, log
 
 
@@ -89,7 +110,7 @@ class UniformSurvey(CummulativeSurvey):
         reward_sum = current_steps["reward"].sum()
         return reward_scale * reward_sum
 
-    def _subclass_reward(self, *args, **kwargs):
+    def cummulative_reward(self, *args, **kwargs):
         if len(self.all_steps) != 0:
             reward = self.reward_function()
             reward = reward if not (pd.isnull(reward) or reward == -np.inf) else 0
@@ -134,7 +155,7 @@ class LowVisiblitySurvey(CummulativeSurvey):
 
         return hit_counter
 
-    def _subclass_reward(self):
+    def cummulative_reward(self):
         if len(self.all_steps) != 0:
 
             reward_scale = 1 / len(self.all_steps)
