@@ -86,6 +86,15 @@ class UniformSurvey(CummulativeSurvey):
         self.reward_function = reward_function[uniform]
 
     def site_reward(self):
+        """
+        Calculate the reward for all sites, assuming it is required for a threshold on the number of times each site is visited.
+        Follows the equation:
+
+        $$R_{S_{n}} = \frac{1}{||T||* Var(\\{||(s_i)||: s_i \\in S_n\\})}*  \\Sigma^{S_{n}}_{i=0} \begin{cases} \\Sigma^{t_{n}}_{j=0} \tau_{eff}(s_{i,j}) & ||s_i|| \\geq N \\ 0 & ||s_i|| < N  \\ \\end{cases}$$
+
+        Returns:
+            float: reward based on if number of sites a site was visited reached a threshold
+        """
         counts = self.all_steps["action"].value_counts()
         reward_scale = 1 / (len(self.all_steps) * np.var(counts))
 
@@ -102,6 +111,14 @@ class UniformSurvey(CummulativeSurvey):
         return reward_scale * reward_sum
 
     def quality_reward(self):
+        """Cummulitive reward based on if a per site reward threshold is reached.
+        Defined as:
+
+        $$R_{S_{n}} = \frac{1}{||T||* Var(\\{\tau_{eff}(s_i): s_i \\in S_n)\\}}* \\Sigma^{t_{n}}_{i=0} \begin{cases} \tau_{eff}(s_i) & T_{eff}(s_i) \\geq \theta \\ 0 & \tau_{eff}(s_i) < \theta  \\ \\end{cases}$$
+
+        Returns:
+            float: reward based on if a threshold in reward per site is reached.
+        """
         reward_scale = 1 / (len(self.all_steps)) * np.var(self.all_steps["reward"])
 
         current_steps = self.all_steps.copy()
@@ -111,6 +128,12 @@ class UniformSurvey(CummulativeSurvey):
         return reward_scale * reward_sum
 
     def cummulative_reward(self, *args, **kwargs):
+        """
+        Quality thresholded or visit thresholded reward
+
+        Returns:
+            float: all sites reward
+        """
         if len(self.all_steps) != 0:
             reward = self.reward_function()
             reward = reward if not (pd.isnull(reward) or reward == -np.inf) else 0
