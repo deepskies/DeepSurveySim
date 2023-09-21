@@ -129,6 +129,16 @@ class LowVisiblitySurvey(CummulativeSurvey):
         other_site_weight: float = 0.6,
         time_tolerance: float = 0.01388,
     ) -> None:
+        """
+        Survey that evaluates how many times a "required site" has been visited, and defines the reward of a site based on this.
+
+        Args:
+            obseravtory_config (dict): Setup parameters for Survey.ObservationVariables, the telescope configuration, as read by IO.ReadConfig
+            survey_config (dict): Parameters for the survey, including the stopping conditions, the validity conditions, the variables to collect, as read by IO.ReadConfig
+            required_sites (list, optional): Sites that must be visited to achieve reward. Same format as an action. Defaults to [].
+            other_site_weight (float, optional): Weighting factor applied to reward gained from visiting sites not in the "required_sites" list. Defaults to 0.6.
+            time_tolerance (float, optional): Tolerance given to a required time. Defaults to 0.01388 (seconds, 20 minutes).
+        """
         super().__init__(observatory_config, survey_config)
 
         self.required_sites = required_sites
@@ -136,6 +146,12 @@ class LowVisiblitySurvey(CummulativeSurvey):
         self.weight = other_site_weight
 
     def sites_hit(self):
+        """Count the number of times a required site was visited. Does not follow a thresholding rule.
+
+        Returns:
+            int: times the requires sites were visited.
+        """
+
         # TODO do this with sets and arrays instead of a loop
         hit_counter = 0
         for site in self.required_sites:
@@ -156,6 +172,13 @@ class LowVisiblitySurvey(CummulativeSurvey):
         return hit_counter
 
     def cummulative_reward(self):
+        """
+        Reward for all visited sites as defined as
+        $$  R_{s_{n}} = \frac{1}{||T||} (||\\{s_i: s_i \\in S_{interest}\\}|| + \\lambda \\Sigma^{t_{n}}_{t=0}  T_{eff_t}(s_t)) $$
+
+        Returns:
+            float: reward calculted as a result of all current sites visited in the schedule
+        """
         if len(self.all_steps) != 0:
 
             reward_scale = 1 / len(self.all_steps)
@@ -168,4 +191,4 @@ class LowVisiblitySurvey(CummulativeSurvey):
             return reward
 
         else:
-            return 0
+            return 0.0
