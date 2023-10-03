@@ -1,8 +1,8 @@
 Survey
 =======
-.. autoclass:: telescope_positioning_simulation.Survey.Survey
+.. autoclass:: DeepSurveySim.Survey.Survey
     :members:
 
 
-.. autoclass:: telescope_positioning_simulation.Survey.ObservationVariables
+.. autoclass:: DeepSurveySim.Survey.ObservationVariables
     :members:
