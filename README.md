@@ -41,10 +41,10 @@ pip install DeepSurveySim
 
 This will install the project with all its mandatory requirements.
 
-If you wish to include the optional `skybright`, use the command:
+If you wish to add the optional `skybright`, use the command:
 
 ```
-pip install DeepSurveySim[skybright]
+pip install git+https://github.com/ehneilsen/skybright.git
 ```
 
 Not installing this will result in loss of the variables `sky_magintude`, `tau`, and `teff`, but will work on most (if not all) machines.
