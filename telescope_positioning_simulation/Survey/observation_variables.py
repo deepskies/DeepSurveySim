@@ -5,6 +5,8 @@ import numpy as np
 import os
 import numexpr
 
+from telescope_positioning_simulation.Survey.action import Action
+
 
 class ObservationVariables:
     """
@@ -94,13 +96,13 @@ class ObservationVariables:
         else:
             self.position_fuzz = {"ra": 0, "decl": 0}
 
-        self.time = None
-        self.location = self.default_locations
-        self.band = "g"
-
         self.slew_rate = observator_configuration["slew_expr"]
         self.band_change_rate = observator_configuration["filter_change_rate"]
         self.readout_seconds = observator_configuration["readout_seconds"]
+
+        self.action = Action(
+            time=6000, ra=self.default_locations[0], decl=self.default_locations[1]
+        )
 
     def _init_skybright(self, skybright_config):
         try:
@@ -124,12 +126,7 @@ class ObservationVariables:
                 "ERROR: skybright module not found, please install it from https://github.com/ehneilsen/skybright.git"
             )
 
-    def update(
-        self,
-        time: Union[float, list[float]],
-        location: Union[dict, None] = None,
-        band: Union[str, None] = None,
-    ):
+    def update(self, action: Action):
         """
         Move the simulation forward to the next site.
         Updates the time (ObservationVariables.time), the delay between pervious time and new time, observation site (ObservationVariables.location), and optial filter band (ObservationVariables.band)
@@ -139,30 +136,17 @@ class ObservationVariables:
             location (Union[dict, None], optional): Location (paired ra/delc) in degrees to move the telescope pointing. Will not change the pointing if location not specificed. Defaults to None.
             band (Union[str, None], optional): Optical filter to use for observation. Will not be changed if not specified. Select from bands specified by ObservationVariables.band_wavelengths. Defaults to None.
         """
-        if location is not None:
-            assert "ra" in location.keys()
-            assert "decl" in location.keys()
+        delay = self._delay_time(action)
+        ra, decl = self._update_location(action.ra, action.decl)
 
-            location = self._update_location(location["ra"], location["decl"])
-            delay = self._delay_time(location, band)
-
-        else:
-            location = self.location
-            if (band is not None) and (time is not None):
-                delay = self._delay_time(self.location, band)
-            else:
-                delay = 0
-
-        self.time = self._time(time + delay)
-        self.band = band if band is not None else self.band
-        self.location = location
+        self.action = Action(action.mjd + delay, ra=ra, decl=decl, band=action.band)
 
     def _angular_distance(self, location):
         ra1, ra2 = np.array(
-            (self.location.ra.value * np.pi / 180) + 10**-9
+            (self.action.location.ra.value * np.pi / 180) + 10**-9
         ), np.array((location.ra.value * np.pi / 180) + 10**-9)
         decl1, decl2 = np.array(
-            (self.location.dec.value * np.pi / 180) + 10**-9
+            (self.action.location.dec.value * np.pi / 180) + 10**-9
         ), np.array((location.dec.value * np.pi / 180) + 10**-9)
 
         seperation = np.arccos(
@@ -173,10 +157,10 @@ class ObservationVariables:
 
         return seperation
 
-    def _delay_time(self, location, band):
-        delay = self.slew_rate * self._angular_distance(location)
+    def _delay_time(self, action):
+        delay = self.slew_rate * self._angular_distance(action.location)
 
-        if band != self.band:
+        if action.band != self.action.band:
             delay += self.band_change_rate
         delay += self.readout_seconds
 
@@ -190,13 +174,14 @@ class ObservationVariables:
 
             return scale / (1 + np.exp(-1 * (var_difference - midpoint)))
 
-        ra_nudge = nudge_factor(abs(ra - self.location.ra.deg.mean()), "ra")
+        ra_nudge = nudge_factor(abs(ra - self.action.location.ra.deg.mean()), "ra")
         ra = ra + ra_nudge
-        delc_nudge = nudge_factor(abs(decl - self.location.dec.deg.mean()), "decl")
+        delc_nudge = nudge_factor(
+            abs(decl - self.action.location.dec.deg.mean()), "decl"
+        )
         decl = decl + delc_nudge
 
-        location = self._sky_coordinates(ra, decl)
-        return location
+        return ra, decl
 
     def _init_observator(
         self, obs_latitude_degrees, obs_logitude_degrees, obs_elevation_meters
@@ -216,7 +201,7 @@ class ObservationVariables:
         if type(ra) == list:
             assert len(ra) == len(decl), "Please pass pairs of ra/decl"
 
-        return self._sky_coordinates(ra, decl)
+        return ra, decl
 
     def _airmass(self, location):
         alt = np.array(self._alt_az(location).alt.degree)
@@ -225,25 +210,24 @@ class ObservationVariables:
 
         airmass = numexpr.evaluate("sqrt((a*cos_zd)**2 + 2*a + 1) - a * cos_zd")
         airmass[(alt * self.to_radians) < 0] = np.nan
-        # airmass = airmass * self.radians.to(self.degree)
-        return airmass
 
-    def _time(self, time):
-        return astropy.time.Time(np.asarray(time), format="mjd")
+        return airmass
 
     def _alt_az(self, coordinates):
         site = astropy.coordinates.EarthLocation.from_geodetic(
             lon=self.observator.location.lon, lat=self.observator.location.lat
         )
 
-        altaz_conversion = astropy.coordinates.AltAz(obstime=self.time, location=site)
+        altaz_conversion = astropy.coordinates.AltAz(
+            obstime=self.action.time, location=site
+        )
         alt_az = coordinates.transform_to(altaz_conversion)
 
         return alt_az
 
     def _local_sidereal_time(self):
         local_sidereal_time = self.observator.local_sidereal_time(
-            self.time, "mean"
+            self.action.time, "mean"
         ).to_value(self.degree)
         return local_sidereal_time
 
@@ -271,7 +255,7 @@ class ObservationVariables:
             dict[array]: Local Sideral Time, shape (n observation times, n sites)
         """
         lst = self._local_sidereal_time()
-        return {"lst": np.asarray([lst for _ in range(len(self.location))])}
+        return {"lst": np.asarray([lst for _ in range(len(self.action.ra))])}
 
     def calculate_sun_location(self):
         """
@@ -280,14 +264,14 @@ class ObservationVariables:
         Returns:
             dict[array]: Dictionary of RA/Decl of the Sun, shape (n observation times, n sites)
         """
-        sun_coordinates = astropy.coordinates.get_sun(self.time)
+        sun_coordinates = astropy.coordinates.get_sun(self.action.time)
 
         sun_ra = sun_coordinates.ra.to_value(self.degree)
         sun_decl = sun_coordinates.dec.to_value(self.degree)
 
         return {
-            "sun_ra": np.asarray([sun_ra for _ in range(len(self.location))]),
-            "sun_decl": np.asarray([sun_decl for _ in range(len(self.location))]),
+            "sun_ra": np.asarray([sun_ra for _ in range(len(self.action.ra))]),
+            "sun_decl": np.asarray([sun_decl for _ in range(len(self.action.ra))]),
         }
 
     def calculate_sun_ha(self):
@@ -298,9 +282,9 @@ class ObservationVariables:
         Returns:
             dict[array]: Sun HA, shape (n observation times, n sites)
         """
-        sun_coordinates = astropy.coordinates.get_sun(self.time)
+        sun_coordinates = astropy.coordinates.get_sun(self.action.time)
         sun_ha = self._ha(sun_coordinates)
-        return {"sun_ha": np.asarray([sun_ha for _ in range(len(self.location))])}
+        return {"sun_ha": np.asarray([sun_ha for _ in range(len(self.action.ra))])}
 
     def calculate_sun_airmass(self):
         """
@@ -310,25 +294,26 @@ class ObservationVariables:
         Returns:
             dict[array]: Sun Airmass, shape (n observation times, n sites)
         """
-        sun_coordinates = astropy.coordinates.get_sun(self.time)
+        sun_coordinates = astropy.coordinates.get_sun(self.action.time)
         sun_airmass = self._airmass(sun_coordinates)
 
         return {
-            "sun_airmass": np.asarray([sun_airmass for _ in range(len(self.location))])
+            "sun_airmass": np.asarray([sun_airmass for _ in range(len(self.action.ra))])
         }
 
     def calculate_moon_location(self):
-        moon_location = astropy.coordinates.get_moon(self.time)
-        moon_ra = moon_location.ra.to_value(self.degree)
-        moon_decl = moon_location.dec.to_value(self.degree)
-        """ Calculate the moon position at current time
+        """Calculate the moon position at current time
 
         Returns:
             dict[array]: Moon location in degrees (Right Ascension/Declination), shape (n observation times, n sites)
         """
+        moon_location = astropy.coordinates.get_moon(self.action.time)
+        moon_ra = moon_location.ra.to_value(self.degree)
+        moon_decl = moon_location.dec.to_value(self.degree)
+
         return {
-            "moon_ra": np.asarray([moon_ra for _ in range(len(self.location))]),
-            "moon_decl": np.asarray([moon_decl for _ in range(len(self.location))]),
+            "moon_ra": np.asarray([moon_ra for _ in range(len(self.action.ra))]),
+            "moon_decl": np.asarray([moon_decl for _ in range(len(self.action.ra))]),
         }
 
     def calculate_moon_brightness(self):
@@ -345,13 +330,15 @@ class ObservationVariables:
         Returns:
             dict[array]: Array of above moon brightness variables, shape (n observation times, n sites)
         """
-        moon_location = astropy.coordinates.get_moon(self.time)
+        moon_location = astropy.coordinates.get_moon(self.action.time)
 
-        moon_phase = astroplan.moon.moon_phase_angle(self.time).to_value(self.degree)
-        moon_illumination = self.observator.moon_illumination(self.time)
+        moon_phase = astroplan.moon.moon_phase_angle(self.action.time).to_value(
+            self.degree
+        )
+        moon_illumination = self.observator.moon_illumination(self.action.time)
 
         moon_elongation = (
-            astropy.coordinates.get_sun(self.time)
+            astropy.coordinates.get_sun(self.action.time)
             .separation(moon_location)
             .to_value(self.degree)
         )
@@ -361,21 +348,18 @@ class ObservationVariables:
         moon_Vmagintude = -12.73 + 0.026 * np.abs(alpha) + 4e-9 * (alpha**4)
 
         moon_seperation = np.asarray(
-            [
-                moon_location.separation(location).to_value(self.degree)
-                for location in self.location
-            ]
+            [moon_location.separation(self.action.location).to_value(self.degree)]
         )
         return {
             "moon_elongation": np.asarray(
-                [moon_elongation for _ in range(len(self.location))]
+                [moon_elongation for _ in range(len(self.action.ra))]
             ),
-            "moon_phase": np.asarray([moon_phase for _ in range(len(self.location))]),
+            "moon_phase": np.asarray([moon_phase for _ in range(len(self.action.ra))]),
             "moon_illumination": np.asarray(
-                [moon_illumination for _ in range(len(self.location))]
+                [moon_illumination for _ in range(len(self.action.ra))]
             ),
             "moon_Vmagintude": np.asarray(
-                [moon_Vmagintude for _ in range(len(self.location))]
+                [moon_Vmagintude for _ in range(len(self.action.ra))]
             ),
             "moon_seperation": moon_seperation,
         }
@@ -388,9 +372,9 @@ class ObservationVariables:
         Returns:
             dict[array]: Moon HA shape (n observation times, n sites)
         """
-        moon_location = astropy.coordinates.get_moon(self.time)
+        moon_location = astropy.coordinates.get_moon(self.action.time)
         moon_ha = self._ha(moon_location)
-        return {"moon_ha": np.asarray([moon_ha for _ in range(len(self.location))])}
+        return {"moon_ha": np.asarray([moon_ha for _ in range(len(self.action.ra))])}
 
     def calculate_moon_airmass(self):
         """ "
@@ -400,10 +384,10 @@ class ObservationVariables:
         Returns:
             dict[array]: Moon Airmass, shape (n observation times, n sites)
         """
-        moon_location = astropy.coordinates.get_moon(self.time)
+        moon_location = astropy.coordinates.get_moon(self.action.time)
         moon_airmass = self._airmass(moon_location)
         return {
-            "moon_airmass": np.array([moon_airmass for _ in range(len(self.location))])
+            "moon_airmass": np.array([moon_airmass for _ in range(len(self.action.ra))])
         }
 
     def calculate_observation_angles(self):
@@ -413,7 +397,7 @@ class ObservationVariables:
         Returns:
             dict[array]: Azimuthal angle (az), Altitude (alt) in degrees, shape (n observation times, n sites)
         """
-        hzcrds = [self._alt_az(location) for location in self.location]
+        hzcrds = [self._alt_az(self.action.location)]
         alt = np.asarray([hzcrd.alt.degree for hzcrd in hzcrds])
         az = np.asarray([hzcrd.az.degree for hzcrd in hzcrds])
 
@@ -430,7 +414,7 @@ class ObservationVariables:
         Returns:
             dict[array]: Pointing HA, shape (n observation times, n sites)
         """
-        return {"ha": np.asarray([self._ha(location) for location in self.location])}
+        return {"ha": np.asarray([self._ha(self.action.location)])}
 
     def calculate_observation_airmass(self):
         """
@@ -439,11 +423,7 @@ class ObservationVariables:
         Returns:
             dict[array]: Pointing Airmass,  shape (n observation times, n sites)
         """
-        return {
-            "airmass": np.asarray(
-                [self._airmass(location) for location in self.location]
-            )
-        }
+        return {"airmass": np.asarray([self._airmass(self.action.location)])}
 
     def calculate_seeing(self):
         """
@@ -456,7 +436,7 @@ class ObservationVariables:
         """
         airmass = self.calculate_observation_airmass()["airmass"]
         pt_seeing = self.seeing * airmass**0.6
-        wavelength = self.band_wavelengths[self.band]
+        wavelength = self.band_wavelengths[self.action.band]
         band_seeing = pt_seeing * (500.0 / wavelength) ** 0.2
         fwhm = np.sqrt(band_seeing**2 + self.optics_fwhm**2)
 
@@ -471,20 +451,20 @@ class ObservationVariables:
             dict[array]: Dictionary of "sky magnitude", "tau", "teff", shape (n observation times, n sites)
         """
         if hasattr(self, "skybright"):
-            m0 = self.skybright.m_zen[self.band]
+            m0 = self.skybright.m_zen[self.action.band]
             nu = 10 ** (-1 * self.clouds / 2.5)
             fwhm500 = self.calculate_seeing()["fwhm"]
             moon_elongation = self.calculate_moon_brightness()["moon_elongation"]
 
             sky_mag = np.asarray(
                 self.skybright(
-                    self.time.mjd.mean(),
-                    self.location.ra.degree,
-                    self.location.dec.degree,
-                    self.band,
-                    moon_crds=astropy.coordinates.get_moon(self.time),
+                    self.action.time.mjd.mean(),
+                    self.action.location.ra.degree,
+                    self.action.location.dec.degree,
+                    self.action.band,
+                    moon_crds=astropy.coordinates.get_moon(self.action.time),
                     moon_elongation=moon_elongation[0],
-                    sun_crds=astropy.coordinates.get_sun(self.time),
+                    sun_crds=astropy.coordinates.get_sun(self.action.time),
                 )
             )
 

@@ -4,7 +4,7 @@ from telescope_positioning_simulation.Survey.observation_variables import (
     ObservationVariables,
 )
 
-from telescope_positioning_simulation.IO.read_config import ReadConfig
+from telescope_positioning_simulation.Survey.action import Action
 
 
 class Survey:
@@ -49,8 +49,13 @@ class Survey:
         self.start_time = survey_config["start_time"]
         self.invalid_penality = survey_config["invalid_penality"]
 
-        self.time = self._start_time()
-        self.observator.update(time=self.time)
+        time = self._start_time()
+        action = Action(
+            time=time,
+            ra=self.observator.default_locations[0],
+            decl=self.observator.default_locations[1],
+        )
+        self.observator.update(action)
 
         self.save_config = survey_config["save"]
         self.timestep = 0
@@ -70,8 +75,11 @@ class Survey:
     def reset(self):
         """Return the observer to its inital position, the time to the start time, and the timestep to 0."""
         self.timestep = 0
-        self.time = self._start_time()
-        self.observator.update(time=self.time)
+        time = self._start_time()
+        action = Action(
+            time=time,
+        )
+        self.observator.update()
 
     def _validity(self, observation):
         valid = True
@@ -129,7 +137,7 @@ class Survey:
 
         return reward
 
-    def step(self, action: dict):
+    def step(self, action: Action):
         """
         Move the observator forward with one action and add the reward and stop condition to the returned observation.
 
@@ -139,9 +147,8 @@ class Survey:
         Returns:
             Tuple : observation (dict, containing survey_config["variables"], vality, Time (in mjd)), reward (array), stop (array), log (dictionary)
         """
-        print(action)
-        self.observator.update(**action)
-        self.time = self.observator.time.mjd.mean()
+        self.observator.update(action)
+        self.action = self.observator.action
         observation = self._observation_calculation()
         reward = self._reward(observation)
         self.timestep += 1
@@ -159,7 +166,7 @@ class Survey:
             observation[var_name] = self.observatory_variables[var_name]()[var_name]
 
         observation["valid"] = self._validity(observation=observation)
-        observation["mjd"] = np.array(self.time)
+        observation["mjd"] = np.array(self.action.time)
 
         return observation
 
@@ -167,15 +174,14 @@ class Survey:
         stop = False
         results = {}
         while not stop:
-            observation, reward, stop, _ = self.step(self.observator.default_locations)
+            observation, reward, stop, _ = self.step(self.action)
 
-            results[self.observator.time.mjd] = {
+            results[self.action.mjd] = {
                 obs_var: np.array(observation[obs_var], dtype=np.float32)
                 for obs_var in observation
             }
-            results[self.observator.time.mjd]["reward"] = np.array(
-                reward, dtype=np.float32
-            )
+            results[self.action.mjd]["reward"] = np.array(reward, dtype=np.float32)
+            results[self.action.mjd]["action"] = self.action.asdict()
 
             # TODO checkpoint functionality
 

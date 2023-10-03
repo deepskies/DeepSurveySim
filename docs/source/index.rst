@@ -11,6 +11,7 @@ Welcome to TelescopePositioningSimulator's documentation!
 
    io
    survey
+   cummulative_survey
    configurations
    cookbook
 

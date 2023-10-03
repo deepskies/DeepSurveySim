@@ -2,6 +2,7 @@ import pytest
 from telescope_positioning_simulation.Survey.observation_variables import (
     ObservationVariables,
 )
+from telescope_positioning_simulation.Survey.action import Action
 from telescope_positioning_simulation.IO.read_config import ReadConfig
 
 # Assuming the variables are correct from the test_read
@@ -24,20 +25,21 @@ def observations(seo_observatory):
     times = np.random.default_rng().uniform(low=55000, high=70000, size=5)
     band = "g"  # TODO test other bands
 
-    seo_observatory.update(times)
+    actions = Action(time=times)
+    seo_observatory.update(actions)
 
     obs = {}
     for function in seo_observatory.observator_mapping():
         obs |= function()
 
     obs["times"] = np.asarray(
-        [seo_observatory.time.mjd for _ in seo_observatory.location]
+        [seo_observatory.action.mjd for _ in seo_observatory.action]
     ).ravel()
     obs["ra"] = np.asarray(
-        [seo_observatory.location.ra.value for _ in seo_observatory.time.ravel()]
+        [seo_observatory.action.ra.value for _ in seo_observatory.action.ravel()]
     ).T.ravel()
     obs["decl"] = np.asarray(
-        [seo_observatory.location.dec.value for _ in seo_observatory.time.ravel()]
+        [seo_observatory.action.dec.value for _ in seo_observatory.action.ravel()]
     ).T.ravel()
 
     for key in obs.keys():
@@ -49,7 +51,7 @@ def test_variable_size(seo_observatory):
     time_size = 5
     default_sites = 10
     times = np.random.default_rng().uniform(low=55000, high=70000, size=time_size)
-    seo_observatory.update(times)
+    seo_observatory.update(Action(times))
 
     for function in seo_observatory.observator_mapping():
         variable_dictionary = function()
