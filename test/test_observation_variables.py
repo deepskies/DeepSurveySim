@@ -1,8 +1,8 @@
 import pytest
-from telescope_positioning_simulation.Survey.observation_variables import (
+from DeepSurveySim.Survey.observation_variables import (
     ObservationVariables,
 )
-from telescope_positioning_simulation.IO.read_config import ReadConfig
+from DeepSurveySim.IO.read_config import ReadConfig
 
 # Assuming the variables are correct from the test_read
 

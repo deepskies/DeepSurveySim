@@ -1,0 +1,55 @@
+airmass_limit: 2.0
+cloud_extinction: 0.0
+constaints:
+  airmass:
+    lesser: true
+    value: 2.0
+  alt:
+    lesser: false
+    value: 20.0
+default_transition_time: 0
+elevation: 2215.0
+filter_change_rate: 0.0
+fwhm: 0.45
+invalid_penality: -100
+latitude: 38.28869
+location:
+  n_sites: 10
+longitude: -122.504
+max_sun_alt: 14.0
+min_moon_angle: 20.0
+min_telescope_alt: 20.0
+name: Stone Edge Observatory
+readout_seconds: 27.0
+reward:
+  min: false
+  monitor: airmass
+run_id: ''
+save: test/test_files/test_saving/
+seeing: 0.9
+shutter_seconds: 0.0
+skybright:
+  config: default
+slew_expr: 1.7
+start_time: random
+stopping:
+  timestep: 400
+timestep_size: 300
+use_skybright: false
+variables:
+- airmass
+- alt
+- ha
+- moon_airmass
+- lst
+- sun_airmass
+wavelengths:
+  Y: 1000.0
+  g: 475.0
+  i: 775.0
+  r: 635.0
+  u: 380.0
+  z: 925.0
+weather_config:
+  weather_source_file: ./telescope_positioning_simulation/settings/SEO_weather.csv
+weather_sim: false

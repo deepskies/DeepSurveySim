@@ -1,6 +1,6 @@
-from telescope_positioning_simulation.IO.save_simulation import SaveSimulation
-from telescope_positioning_simulation.IO.read_config import ReadConfig
-from telescope_positioning_simulation.Survey.survey import Survey
+from DeepSurveySim.IO.save_simulation import SaveSimulation
+from DeepSurveySim.IO.read_config import ReadConfig
+from DeepSurveySim.Survey.survey import Survey
 
 import pytest
 import os
