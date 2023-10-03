@@ -3,7 +3,7 @@ Using the simulation with ``gym.Env``
 `gym.Env <https://gymnasium.farama.org/api/env/>`_ is a framework to produce a live simulation that can be incremented in parallel.
 Most commonly this is used in RL applications, like for Rllib or Stable Baselines, as their high computational cost requires the efficiency of parallelization.
 
-In order to change the the simulation into a gym.Env, subclass ``gym.Env`` and the ``TelescopePositioningSimulator.Survey`` functionality.
+In order to change the the simulation into a gym.Env, subclass ``gym.Env`` and the ``DeepSurveySim.Survey`` functionality.
 It is recommended to check your work with gym's `Envoriment Checker <https://gymnasium.farama.org/api/utils/#environment-checking>`_ before using it in any application.
 
 Initialization
@@ -146,8 +146,8 @@ The below example shows a bare-bones envoriment with outputs designed for an `rl
 
     import numpy as np
     from gymnasium import spaces, Env
-    from telescope_positioning_simulation.Survey import Survey
-    from telescope_positioning_simulation.IO import ReadConfig
+    from DeepSurveySim.Survey import Survey
+    from DeepSurveySim.IO import ReadConfig
 
     class GymSurvey(Survey, Env):
         def __init__(self, kwarg):

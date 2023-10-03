@@ -1,10 +1,10 @@
 In/Out
 ========
 
-.. autoclass:: telescope_positioning_simulation.IO.ReadConfig
+.. autoclass:: DeepSurveySim.IO.ReadConfig
     :members:
 
 
-.. autoclass:: telescope_positioning_simulation.IO.SaveSimulation
+.. autoclass:: DeepSurveySim.IO.SaveSimulation
     :members:
 

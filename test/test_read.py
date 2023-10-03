@@ -1,12 +1,12 @@
-from telescope_positioning_simulation.IO.read_config import ReadConfig
+from DeepSurveySim.IO.read_config import ReadConfig
 import pytest
 import yaml
 
 
 def test_read_telescope_default_config():
-    obs_path = "telescope_positioning_simulation/settings/SEO.yaml"
+    obs_path = "DeepSurveySim/settings/SEO.yaml"
     default_telescope = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/SEO.yaml"
+        observator_configuration="DeepSurveySim/settings/SEO.yaml"
     )()
 
     with open(obs_path, "r") as f:
@@ -16,7 +16,7 @@ def test_read_telescope_default_config():
 
 
 def test_read_survey_default_config():
-    obs_path = "telescope_positioning_simulation/settings/equatorial_survey.yaml"
+    obs_path = "DeepSurveySim/settings/equatorial_survey.yaml"
     default_telescope = ReadConfig(observator_configuration=obs_path, survey=True)()
 
     with open(obs_path, "r") as f:
@@ -31,7 +31,7 @@ def test_read_empty_config():
     with open(test_path, "w") as f:
         yaml.safe_dump(empty_config, f)
 
-    default_path = "telescope_positioning_simulation/settings/SEO.yaml"
+    default_path = "DeepSurveySim/settings/SEO.yaml"
     default_telescope = ReadConfig(test_path)()
 
     with open(default_path, "r") as f:
@@ -52,7 +52,7 @@ def test_read_half_filled_config():
     with open(test_path, "w") as f:
         yaml.safe_dump(half_filled_config, f)
 
-    default_path = "telescope_positioning_simulation/settings/SEO.yaml"
+    default_path = "DeepSurveySim/settings/SEO.yaml"
     read_config = ReadConfig(test_path)()
 
     with open(default_path, "r") as f:

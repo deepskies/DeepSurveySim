@@ -1,5 +1,5 @@
-from telescope_positioning_simulation.Survey.survey import Survey
-from telescope_positioning_simulation.IO.read_config import ReadConfig
+from DeepSurveySim.Survey.survey import Survey
+from DeepSurveySim.IO.read_config import ReadConfig
 
 import numpy as np
 import pytest
@@ -8,11 +8,11 @@ import pytest
 @pytest.fixture
 def survey_setup():
     seo_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/SEO.yaml"
+        observator_configuration="DeepSurveySim/settings/SEO.yaml"
     )()
 
     survey_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/equatorial_survey.yaml",
+        observator_configuration="DeepSurveySim/settings/equatorial_survey.yaml",
         survey=True,
     )()
 
