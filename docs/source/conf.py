@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 
-import telescope_positioning_simulation
+import DeepSurveySim
 
 # Configuration file for the Sphinx documentation builder.
 #

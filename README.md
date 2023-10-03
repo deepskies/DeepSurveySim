@@ -1,34 +1,63 @@
 
-![status](https://img.shields.io/badge/License-MIT-lightgrey)
+[![status](https://img.shields.io/badge/License-BSD3-lightgrey)](https://github.com/deepskies/TelescopePositioningSimulation/blob/61abe7a67de72e5a22755c427189fa402f57dc9f/LICENSE)
+[![test-telescope](https://github.com/deepskies/TelescopePositioningSimulation/actions/workflows/test-telescope.yaml/badge.svg?branch=main)]()
+ [![PyPI version](https://badge.fury.io/py/deepsurveysim.svg)](https://badge.fury.io/py/deepsurveysim)
+[![Documentation Status](https://readthedocs.org/projects/deepsurveysim/badge/?version=latest)](https://deepsurveysim.readthedocs.io/en/latest/?badge=latest)
 
 # Summary
 
-This repo is a stripped down version of the main [RLTelescope](https://github.com/deepskies/RLTelescopes); containing just the positioning simulation.
+Modern astronomical surveys have multiple competing scientific goals.
+Optimizing the observation schedule for these goals presents significant computational and theoretical challenges, and state-of-the-art methods rely on expensive human inspection of simulated telescope schedules.
+Automated methods, such as reinforcement learning, have recently been explored to accelerate scheduling.
+**DeepSurveySim** provides methods for tracking and approximating sky conditions for a  set of observations from a user-supplied telescope configuration.
+
+# Documentation
+
+### [ReadTheDocs](https://deepsurveysim.readthedocs.io/en/latest/)
+
+### Build locally
+
+First install the package from source, then run
+
+```
+pip install sphinx
+cd docs
+make html
+```
+
+The folder `docs/_build/html` will be populated with the documentation.
+Navigate to `file:///<path to local install>/docs/_build/html/index.html` in any web browser to view.
+
 
 
 # Installation
-## Install from pip
+### Install from pip
+
 Simply run
 
-`pip install git+https://github.com/deepskies/TelescopePositioningSimulation`
+```
+pip install DeepSurveySim
+```
 
 This will install the project with all its mandatory requirements.
 
 If you wish to include the optional `skybright`, use the command:
-`pip install git+https://github.com/deepskies/TelescopePositioningSimulation@development#egg=telescope-positioning-simulation[skybright]`
+
+```
+pip install DeepSurveySim[skybright]
+```
 
 Not installing this will result in loss of the variables `sky_magintude`, `tau`, and `teff`, but will work on most (if not all) machines.
 
-## Install from source
+### Install from source
 
 The project is built with [poetry](https://python-poetry.org/), and this is the recommended install method.
 All dependencies are resolved in the `poetry.lock` file, so you can install immediately from the command
 
 ```
-git clone https://github.com/deepskies/TelescopePositioningSimulation.git
+git clone https://github.com/deepskies/DeepSurveySim.git
 poetry shell
 poetry install --all-extras
-
 ```
 
 Assuming you have poetry installed on your base environment.
@@ -45,15 +74,15 @@ To verify all the depedencies are properly installed - run `python run pytest`.
 ## To run as a live envoriment for RL
 
 ```
-from telescope_positioning_simulation.Survey.survey import Survey
-from telescope_positioning_simulation.IO.read_config import ReadConfig
+from DeepSurveySim.Survey.survey import Survey
+from DeepSurveySim.IO.read_config import ReadConfig
 
 seo_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/SEO.yaml"
+        observator_configuration="DeepSurveySim/settings/SEO.yaml"
     )()
 
 survey_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/equatorial_survey.yaml",
+        observator_configuration="DeepSurveySim/settings/equatorial_survey.yaml",
         survey=True
     )()
 
@@ -64,31 +93,52 @@ stop = True
 while not stop:
     action = model.predict_action(observation)
     observation, reward, stop, log = env.step()
-
 ```
 
 ## To generate observations
 
 ```
-from telescope_positioning_simulation.Survey.survey import Survey
-from telescope_positioning_simulation.IO.read_config import ReadConfig
+from DeepSurveySim.Survey.survey import Survey
+from DeepSurveySim.IO.read_config import ReadConfig
 
 seo_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/SEO.yaml"
+        observator_configuration="DeepSurveySim/settings/SEO.yaml"
     )()
 
 survey_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/equatorial_survey.yaml",
+        observator_configuration="DeepSurveySim/settings/equatorial_survey.yaml",
         survey=True
     )()
 
 env = Survey(seo_config, survey_config)
 observations = env()
-
 ```
 
 
 # Acknowledgement
-And you <3
+This work was produced by Fermi Research Alliance, LLC under Contract No. DE-AC02-07CH11359 with the U.S. Department of Energy, Office of Science, Office of High Energy Physics. Publisher acknowledges the U.S. Government license to provide public access under the DOE Public Access Plan DOE Public Access Plan.
+
+We acknowledge the Deep Skies Lab as a community of multi-domain experts and collaborators who’ve facilitated an environment of open discussion, idea-generation, and collaboration. This community was important for the development of this project.
+
+We thank Franco Terranova  and Shohini Rhae for their assistance in testing the preliminary version of the package, and Eric Neilsen  Jr. for his domain expertise.
+
+# Citation
+
+If this package is useful for your work, we request you cite us:
+```
+
+```
+
+If the `skybright` option is used, we also encourage its citation:
+```
+@misc{skybright_Neilsen:2019,
+    author = "Neilsen, Eric",
+    title = "{skybright}",
+    reportNumber = "FERMILAB-CODE-2019-01",
+    doi = "10.11578/dc.20190212.1",
+    month = "2",
+    year = "2019"
+}
+```
 
 

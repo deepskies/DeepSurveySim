@@ -1,9 +1,13 @@
 [tool.poetry]
-name = "telescope_positioning_simulation"
+name = "DeepSurveySim"
 version = "0.1.0"
-description = ""
-authors = ["voetberg <magpie127@gmail.com>"]
-license = "MIT"
+description = "An astrological survey simulation designed for testing MDP-style algorithms"
+authors = ["M. Voetberg <maggiev@fnal.gov"]
+license = "BSD 3-Clause"
+readme = "README.md"
+homepage = "https://github.com/deepskies/DeepSurveySim"
+repository = "https://github.com/deepskies/DeepSurveySim"
+documentation =  "https://deepsurveysim.readthedocs.io/en/latest/"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
