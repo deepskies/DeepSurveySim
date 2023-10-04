@@ -25,6 +25,10 @@ fwhm: 0.45
 # weather
 seeing: 0.9
 cloud_extinction: 0.0
+weather_sim: False
+weather_config: {
+  'weather_source_file': "./telescope_positioning_simulation/settings/SEO_weather.csv"
+}
 
 # camera
 shutter_seconds: 0.0
@@ -35,3 +39,5 @@ location : {'n_sites': 10}
 # skybright options
 use_skybright: False
 skybright: {"config":'default'}
+
+# weather options:
