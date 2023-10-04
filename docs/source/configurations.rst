@@ -73,11 +73,16 @@ Many of these variables are dense, so they are given default values, but explain
     :type name: float
     :param cloud_extinction: Rate clouds appear
     :type name: float
+    :param weather_sim: Include a rudimentary weather simulation based on historical data
+    :type name: boolean 
+    :param weather_config: Setting for the `Weather` engine class
+    :type name: dictionary
 
 .. code-block:: yaml
 
     seeing: 0.9
     cloud_extinction: 0.0
+    weather_sim: False
 
 
 .. attribute:: Camera
@@ -237,7 +242,10 @@ It also sets inital conditions.
 .. attribute:: Variables
 
     List of variables used in the survey.
-    View [Observation Variables](link to the survey/obsersvars page) for further details
+
+    All possible variables are:
+
+    ['lst', 'pt_seeing', 'band_seeing', 'fwhm', 'moon_ha', 'moon_elongation', 'moon_phase', 'moon_illumination', 'moon_Vmagintude', 'moon_seperation', 'moon_ra', 'moon_decl', 'moon_airmass', 'airmass', 'az', 'alt', 'ha', 'sun_ha', 'sun_airmass', 'sun_ra', 'sun_decl']
 
     :param variables: List of string names of the variables used in the survey.
     :type monitor: list

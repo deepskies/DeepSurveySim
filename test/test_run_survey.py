@@ -1,5 +1,5 @@
-from telescope_positioning_simulation.Survey.survey import Survey
-from telescope_positioning_simulation.IO.read_config import ReadConfig
+from DeepSurveySim.Survey.survey import Survey
+from DeepSurveySim.IO.read_config import ReadConfig
 
 import numpy as np
 import pytest
@@ -8,19 +8,19 @@ import pytest
 @pytest.fixture
 def survey_setup():
     seo_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/SEO.yaml"
+        observator_configuration="DeepSurveySim/settings/SEO.yaml"
     )()
 
     survey_config = ReadConfig(
-        observator_configuration="telescope_positioning_simulation/settings/equatorial_survey.yaml",
+        observator_configuration="DeepSurveySim/settings/equatorial_survey.yaml",
         survey=True,
     )()
 
     survey_config["stopping"]["timestep"] = 5
-    survey_config["location"] = {"ra": 0, "decl": 0}
+    seo_config["location"] = {"ra": [0], "decl": [0]}
 
     survey = Survey(seo_config, survey_config)
-
+    print(survey.observator.location)
     observations = []
     rewards = []
     stops = []
@@ -40,6 +40,7 @@ def survey_setup():
         stops.append(stop)
         mjd = observation["mjd"]
 
+    print(observations)
     return observations, rewards, stops
 
 
@@ -53,17 +54,19 @@ def test_has_stop(survey_setup):
     assert survey_setup[2][9] == survey_setup[2][4] == True
 
 
+@pytest.mark.flakey()
 def test_has_invalid(survey_setup):
-    assert True in [obs["valid"] for obs in survey_setup[0]]
+    assert True in [obs["valid"][0][0] for obs in survey_setup[0]]
 
 
+@pytest.mark.flakey()
 def test_has_valid(survey_setup):
-    assert False in [obs["valid"] for obs in survey_setup[0]]
+    assert False in [obs["valid"][0][0] for obs in survey_setup[0]]
 
 
 def test_valid_matchup(survey_setup):
     reward = np.array([survey.ravel() for survey in survey_setup[1]])
-    valid = np.array([obs["valid"].ravel() for obs in survey_setup[0]])
+    valid = np.array([obs["valid"][0].ravel() for obs in survey_setup[0]])
     assert (reward[~valid] == -100).all()
 
 

@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+*.DS_Store
 *.py[cod]
 *$py.class
 
@@ -160,7 +161,4 @@ cython_debug/
 #.idea/
 
 # Repo specific files (testing)
-test/test_files/empty_config.yaml
-test/test_files/test_config.yaml
-test/test_files/test_saving/survey_2023_05_19_12_57_23_4222/run_config.yaml
-test/test_files/test_saving/survey_2023_05_19_12_57_23_4698/survey_results.json
+test/test_files/*

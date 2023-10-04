@@ -2,7 +2,7 @@
    sphinx-quickstart on Thu Jun 29 08:07:26 2023.
 
 
-Welcome to TelescopePositioningSimulator's documentation!
+Welcome to DeepSurveySim's documentation!
 =========================================================
 
 .. toctree::
@@ -12,7 +12,7 @@ Welcome to TelescopePositioningSimulator's documentation!
    io
    survey
    configurations
-
+   cookbook
 
 Indices and tables
 ==================

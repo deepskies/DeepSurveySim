@@ -83,9 +83,9 @@ class ObservationVariables:
 
         self.seeing = observator_configuration["seeing"]
         self.clouds = observator_configuration["cloud_extinction"]
-        if observator_configuration['weather_sim']: 
-            self._init_weather(observator_configuration['weather_config'])
-        
+        if observator_configuration["weather_sim"]:
+            self._init_weather(observator_configuration["weather_config"])
+
         self.optics_fwhm = observator_configuration["fwhm"]
 
         self.default_locations = self._default_locations(
@@ -129,9 +129,12 @@ class ObservationVariables:
 
         self.skybright = skybright.MoonSkyModel(skybright_config_file)
 
-    def _init_weather(self, weather_config): 
-        from telescope_positioning_simulation.Survey import Weather
-        self.weather = Weather(base_seeing=self.seeing, base_clouds=self.clouds, **weather_config)
+    def _init_weather(self, weather_config):
+        from DeepSurveySim.Survey import Weather
+
+        self.weather = Weather(
+            base_seeing=self.seeing, base_clouds=self.clouds, **weather_config
+        )
 
     def update(
         self,
@@ -166,7 +169,7 @@ class ObservationVariables:
         self.band = band if band is not None else self.band
         self.location = location
 
-        if hasattr(self, "weather"): 
+        if hasattr(self, "weather"):
             conditions = self.weather.condition(self.time)
             self.seeing = self.weather.seeing(conditions)
             self.clouds = self.weather.clouds(conditions)

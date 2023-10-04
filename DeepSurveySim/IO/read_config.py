@@ -10,11 +10,12 @@ class ReadConfig:
     Args:
         observator_configuration (Union[None, str], optional): Path to configuration file to read. Defaults to None.
         survey (bool, optional): Read a survey configuration, filling in those defaults. Defaults to False.
-    
-    Examples: 
+
+    Examples:
         >>> observatory_config = IO.ReadConfig(observatory_config_path)()
             survey_config = IO.ReadConfig(survey_config_path, survey=True)()
     """
+
     def __init__(
         self, observator_configuration: Union[None, str] = None, survey: bool = False
     ) -> None:
@@ -33,7 +34,7 @@ class ReadConfig:
         """Read a yaml file from a path
 
         Args:
-            config_path (str): path to file, .yaml or .yml. 
+            config_path (str): path to file, .yaml or .yml.
 
         Returns:
             dict: Read contents of the config
