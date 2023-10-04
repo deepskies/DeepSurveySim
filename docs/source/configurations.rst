@@ -73,11 +73,16 @@ Many of these variables are dense, so they are given default values, but explain
     :type name: float
     :param cloud_extinction: Rate clouds appear
     :type name: float
+    :param weather_sim: Include a rudimentary weather simulation based on historical data
+    :type name: boolean 
+    :param weather_config: Setting for the `Weather` engine class
+    :type name: dictionary
 
 .. code-block:: yaml
 
     seeing: 0.9
     cloud_extinction: 0.0
+    weather_sim: False
 
 
 .. attribute:: Camera

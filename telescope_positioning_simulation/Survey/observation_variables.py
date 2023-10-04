@@ -83,7 +83,9 @@ class ObservationVariables:
 
         self.seeing = observator_configuration["seeing"]
         self.clouds = observator_configuration["cloud_extinction"]
-
+        if observator_configuration['weather_sim']: 
+            self._init_weather(observator_configuration['weather_config'])
+        
         self.optics_fwhm = observator_configuration["fwhm"]
 
         self.default_locations = self._default_locations(
@@ -103,26 +105,33 @@ class ObservationVariables:
         self.readout_seconds = observator_configuration["readout_seconds"]
 
     def _init_skybright(self, skybright_config):
+        from configparser import ConfigParser
+
         try:
             from skybright import skybright
-            from configparser import ConfigParser
-
-            default_config_path = f"{os.path.dirname(__file__).rstrip('/')}/../settings/skybright_config.conf"
-
-            config_path = (
-                default_config_path
-                if skybright_config["config"] == "default"
-                else skybright_config["config"]
-            )
-            skybright_config_file = ConfigParser()
-            skybright_config_file.read(config_path)
-
-            self.skybright = skybright.MoonSkyModel(skybright_config_file)
 
         except ModuleNotFoundError:
-            print(
+            raise ModuleNotFoundError(
                 "ERROR: skybright module not found, please install it from https://github.com/ehneilsen/skybright.git"
             )
+
+        default_config_path = (
+            f"{os.path.dirname(__file__).rstrip('/')}/../settings/skybright_config.conf"
+        )
+
+        config_path = (
+            default_config_path
+            if skybright_config["config"] == "default"
+            else skybright_config["config"]
+        )
+        skybright_config_file = ConfigParser()
+        skybright_config_file.read(config_path)
+
+        self.skybright = skybright.MoonSkyModel(skybright_config_file)
+
+    def _init_weather(self, weather_config): 
+        from telescope_positioning_simulation.Survey import Weather
+        self.weather = Weather(base_seeing=self.seeing, base_clouds=self.clouds, **weather_config)
 
     def update(
         self,
@@ -156,6 +165,11 @@ class ObservationVariables:
         self.time = self._time(time + delay)
         self.band = band if band is not None else self.band
         self.location = location
+
+        if hasattr(self, "weather"): 
+            conditions = self.weather.condition(self.time)
+            self.seeing = self.weather.seeing(conditions)
+            self.clouds = self.weather.clouds(conditions)
 
     def _angular_distance(self, location):
         ra1, ra2 = np.array(
