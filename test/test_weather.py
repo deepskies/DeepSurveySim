@@ -1,11 +1,11 @@
 import pytest
 import numpy as np
 
-from telescope_positioning_simulation.Survey import Weather
-from telescope_positioning_simulation.Survey import ObservationVariables
-from telescope_positioning_simulation.IO import ReadConfig
+from DeepSurveySim.Survey import Weather
+from DeepSurveySim.Survey import ObservationVariables
+from DeepSurveySim.IO import ReadConfig
 
-weather_source_file = "./telescope_positioning_simulation/settings/SEO_weather.csv"
+weather_source_file = "./DeepSurveySim/settings/SEO_weather.csv"
 
 
 @pytest.fixture
@@ -29,6 +29,7 @@ def test_find_date_summer(weather):
     assert month == 7
     assert day == 1
 
+
 def test_find_date_winter(weather):
     mjd = 58119  # Jan 01 2018
     month, day = weather._find_date(mjd)
@@ -42,8 +43,8 @@ def test_find_condition(weather):
     condition = weather.condition(mjd)
 
     assert np.all(condition["DATE"].dt.month == 7)
-    assert np.all(condition['DATE'].dt.day.isin([1,2,3]))
-    
+    assert np.all(condition["DATE"].dt.day.isin([1, 2, 3]))
+
 
 def test_find_seeing(weather):
     mjd = 58320

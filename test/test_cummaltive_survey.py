@@ -1,7 +1,7 @@
 import pytest
 
-from telescope_positioning_simulation.Survey import UniformSurvey, LowVisiblitySurvey
-from telescope_positioning_simulation.IO import ReadConfig
+from DeepSurveySim.Survey import UniformSurvey, LowVisiblitySurvey
+from DeepSurveySim.IO import ReadConfig
 
 action = {"location": {"ra": [0], "decl": [0]}, "band": "g"}
 action_2 = {"location": {"ra": [1], "decl": [1]}, "band": "g"}
