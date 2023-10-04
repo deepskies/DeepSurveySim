@@ -139,7 +139,9 @@ class Survey:
         Returns:
             Tuple : observation (dict, containing survey_config["variables"], vality, Time (in mjd)), reward (array), stop (array), log (dictionary)
         """
-        print(action)
+        if "time" not in action:
+            action["time"] = np.array(self.time)
+
         self.observator.update(**action)
         self.time = self.observator.time.mjd.mean()
         observation = self._observation_calculation()
@@ -164,6 +166,12 @@ class Survey:
         return observation
 
     def __call__(self):
+        """
+        Run the survey with the initial location until the stopping condition is met, return the completed survey
+
+        Returns:
+            dict: Evaluated survey in the form of time:{"variable_name":[variable_value]}
+        """
         stop = False
         results = {}
         while not stop:
