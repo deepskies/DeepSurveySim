@@ -57,7 +57,9 @@ All dependencies are resolved in the `poetry.lock` file, so you can install imme
 ```
 git clone https://github.com/deepskies/DeepSurveySim.git
 poetry shell
-poetry install --all-extras
+poetry install
+poetry add git+https://github.com/ehneilsen/skybright.git
+
 ```
 
 Assuming you have poetry installed on your base environment.

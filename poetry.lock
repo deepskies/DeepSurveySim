@@ -630,17 +630,6 @@ files = [
 ]
 
 [[package]]
-name = "palpy"
-version = "1.8.2"
-description = "PAL -- A Positional Astronomy Library"
-category = "main"
-optional = true
-python-versions = "*"
-files = [
-    {file = "palpy-1.8.2.tar.gz", hash = "sha256:553c028c567a5342f2ce0035c757cfcd0fdb5469a149db7381dbb6d1909d6314"},
-]
-
-[[package]]
 name = "pandas"
 version = "1.5.3"
 description = "Powerful data structures for data analysis, time series, and statistics"
@@ -983,27 +972,6 @@ files = [
 ]
 
 [[package]]
-name = "skybright"
-version = "0.0.3"
-description = "Utility for calculating sky brightness from airglow and moonlight"
-category = "main"
-optional = true
-python-versions = "*"
-files = []
-develop = false
-
-[package.dependencies]
-numexpr = ">=2.6.0"
-numpy = ">=1.11.0"
-palpy = ">=1.8.0"
-
-[package.source]
-type = "git"
-url = "https://github.com/ehneilsen/skybright.git"
-reference = "HEAD"
-resolved_reference = "b0e2d7e6e25131393ee76ce334ce1df1521e3659"
-
-[[package]]
 name = "snowballstemmer"
 version = "2.2.0"
 description = "This package provides 29 stemmers for 28 languages generated from Snowball algorithms."
@@ -1239,4 +1207,4 @@ skybright = ["skybright"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "ea974b836ef4ddbb0b166a3d1930e95ffbf3f333a76d08af2a89dfbe6968699a"
+content-hash = "dec76456038a2fda4db966ebb6c392db1340f9b40418f520e59034f5ca9d8a7c"
