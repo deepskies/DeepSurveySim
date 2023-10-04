@@ -1,6 +1,6 @@
 
-[![status](https://img.shields.io/badge/License-BSD3-lightgrey)](https://github.com/deepskies/TelescopePositioningSimulation/blob/61abe7a67de72e5a22755c427189fa402f57dc9f/LICENSE)
-[![test-telescope](https://github.com/deepskies/TelescopePositioningSimulation/actions/workflows/test-telescope.yaml/badge.svg?branch=main)]()
+[![status](https://img.shields.io/badge/License-BSD3-lightgrey)](https://github.com/deepskies/DeepSurveySim/blob/main/LICENSE)
+[![test-telescope](https://github.com/deepskies/TelescopePositioningSimulation/actions/workflows/test-telescope.yaml/badge.svg?branch=main)](https://github.com/deepskies/DeepSurveySim/actions/workflows/test-telescope.yaml)
  [![PyPI version](https://badge.fury.io/py/deepsurveysim.svg)](https://badge.fury.io/py/deepsurveysim)
 [![Documentation Status](https://readthedocs.org/projects/deepsurveysim/badge/?version=latest)](https://deepsurveysim.readthedocs.io/en/latest/?badge=latest)
 
