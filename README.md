@@ -11,6 +11,10 @@ Optimizing the observation schedule for these goals presents significant computa
 Automated methods, such as reinforcement learning, have recently been explored to accelerate scheduling.
 **DeepSurveySim** provides methods for tracking and approximating sky conditions for a  set of observations from a user-supplied telescope configuration.
 
+# Arxiv 
+
+### [2312.09092](https://arxiv.org/abs/2312.09092)
+
 # Documentation
 
 ### [ReadTheDocs](https://deepsurveysim.readthedocs.io/en/latest/)
@@ -128,7 +132,14 @@ We thank Franco Terranova  and Shohini Rhae for their assistance in testing the 
 
 If this package is useful for your work, we request you cite us:
 ```
-
+@misc{voetberg2023deepsurveysim,
+      title={DeepSurveySim: Simulation Software and Benchmark Challenges for Astronomical Observation Scheduling}, 
+      author={Maggie Voetberg and Brian Nord},
+      year={2023},
+      eprint={2312.09092},
+      archivePrefix={arXiv},
+      primaryClass={astro-ph.IM}
+}
 ```
 
 If the `skybright` option is used, we also encourage its citation:
